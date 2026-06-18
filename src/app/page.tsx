@@ -1230,9 +1230,9 @@ export default function MySuperApp() {
 
                                                                 <button 
                                                                     onClick={(e) => toggleFavorite(e, prod)}
-                                                                    className={`absolute top-3 right-3 p-2 rounded-xl transition ${isFav ? 'bg-rose-500/10 text-rose-500' : 'bg-input-custom text-slate-400 hover:text-rose-500'}`}
+                                                                    className={`absolute top-2 right-2 p-3.5 z-20 rounded-full transition cursor-pointer shadow-sm border border-border-custom ${isFav ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-card-bg text-slate-400 hover:text-rose-500'}`}
                                                                 >
-                                                                    <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+                                                                    <Heart className={`w-4.5 h-4.5 ${isFav ? 'fill-current' : ''}`} />
                                                                 </button>
 
                                                                 <div className="p-4 flex items-center justify-center bg-input-custom h-44">
