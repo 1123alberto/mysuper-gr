@@ -5,20 +5,20 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
-  --panel-bg: rgba(255, 255, 255, 0.7);
-  --sidebar-bg: rgba(255, 255, 255, 0.9);
-  --card-bg: rgba(255, 255, 255, 0.5);
-  --border-custom: rgba(15, 23, 42, 0.05);
+  --panel-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --border-custom: rgba(15, 23, 42, 0.06);
   --input-custom: #f1f5f9;
 }
 
 .dark {
   --background: #0f172a;
   --foreground: #cbd5e1;
-  --panel-bg: rgba(30, 41, 59, 0.7);
-  --sidebar-bg: rgba(15, 23, 42, 0.9);
-  --card-bg: rgba(30, 41, 59, 0.4);
-  --border-custom: rgba(148, 163, 184, 0.08);
+  --panel-bg: #1e293b;
+  --sidebar-bg: #0f172a;
+  --card-bg: #1e293b;
+  --border-custom: rgba(148, 163, 184, 0.1);
   --input-custom: #1e293b;
 }
 
@@ -79,4 +79,14 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }

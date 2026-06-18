@@ -5,7 +5,7 @@ import {
     Search, Moon, Sun, Heart, Trash2, Share2, Copy, Link as LinkIcon, 
     X, Sparkles, ShoppingBag, TrendingUp, ChevronRight, ChevronDown, 
     Store, Percent, Trophy, Info, PiggyBank, RefreshCw, Menu, ShoppingBasket,
-    MapPin
+    MapPin, Home
 } from 'lucide-react';
 import Chart from 'chart.js/auto';
 
@@ -29,6 +29,15 @@ const RETAILER_SEARCH_NAMES: { [key: string]: string } = {
     'masoutis': 'Μασούτης',
     'mymarket': 'My Market',
     'kritikos': 'Κρητικός'
+};
+
+const CATEGORY_META: { [key: string]: { emoji: string; gradient: string } } = {
+    'fb7311d1172f411dba075194a4120689': { emoji: '🍏', gradient: 'from-emerald-500/10 to-teal-500/10 hover:border-emerald-500/30 text-emerald-600 dark:text-emerald-400' },
+    '7f677200338b447cb4d469622588b749': { emoji: '🥤', gradient: 'from-amber-500/10 to-orange-500/10 hover:border-amber-500/30 text-amber-600 dark:text-amber-400' },
+    '648a987abf254feb8cf62a10ea1eb117': { emoji: '🧼', gradient: 'from-blue-500/10 to-indigo-500/10 hover:border-blue-500/30 text-blue-600 dark:text-blue-400' },
+    'b2a17c2ad4235ea8574d602763988be6': { emoji: '🧴', gradient: 'from-pink-500/10 to-rose-500/10 hover:border-pink-500/30 text-pink-600 dark:text-pink-400' },
+    'cFsywHNrftQ6yeittltcSFQ4qbM14Q3F': { emoji: '🍼', gradient: 'from-purple-500/10 to-violet-500/10 hover:border-purple-500/30 text-purple-600 dark:text-purple-400' },
+    'b2a17c2ad4235ea8574d602763a39395': { emoji: '🐶', gradient: 'from-orange-500/10 to-yellow-500/10 hover:border-orange-500/30 text-orange-600 dark:text-orange-400' }
 };
 
 interface RetailerPrice {
@@ -77,6 +86,34 @@ export default function MySuperApp() {
     const [stats, setStats] = useState<any>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [favorites, setFavorites] = useState<Product[]>([]);
+    const [activeBasketIds, setActiveBasketIds] = useState<string[]>([]);
+    const [favoritesSubTab, setFavoritesSubTab] = useState<'pantry' | 'basket'>('pantry');
+
+    const activeBasketProducts = useMemo(() => {
+        return favorites.filter(p => activeBasketIds.includes(p.id));
+    }, [favorites, activeBasketIds]);
+
+    const toggleBasketItem = (productId: string) => {
+        setActiveBasketIds(prev => {
+            const next = prev.includes(productId)
+                ? prev.filter(id => id !== productId)
+                : [...prev, productId];
+            localStorage.setItem('posokanei_active_basket', JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const selectAllBasketItems = () => {
+        const allIds = favorites.map(p => p.id);
+        setActiveBasketIds(allIds);
+        localStorage.setItem('posokanei_active_basket', JSON.stringify(allIds));
+    };
+
+    const deselectAllBasketItems = () => {
+        setActiveBasketIds([]);
+        localStorage.setItem('posokanei_active_basket', JSON.stringify([]));
+    };
+
     const [totalProductsCount, setTotalProductsCount] = useState<number>(0);
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [loadingCategories, setLoadingCategories] = useState(false);
@@ -164,13 +201,30 @@ export default function MySuperApp() {
         }
 
         // Initialize Favorites
+        let loadedFavs: Product[] = [];
         const storedFavs = localStorage.getItem('posokanei_favorites');
         if (storedFavs) {
             try {
-                setFavorites(JSON.parse(storedFavs).map(sanitizeProduct));
+                loadedFavs = JSON.parse(storedFavs).map(sanitizeProduct);
+                setFavorites(loadedFavs);
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        // Initialize Active Basket
+        const storedBasket = localStorage.getItem('posokanei_active_basket');
+        if (storedBasket) {
+            try {
+                setActiveBasketIds(JSON.parse(storedBasket));
+            } catch (e) {
+                console.error(e);
+            }
+        } else {
+            // Default to selecting all favorites if no stored basket exists
+            const allIds = loadedFavs.map(p => p.id);
+            setActiveBasketIds(allIds);
+            localStorage.setItem('posokanei_active_basket', JSON.stringify(allIds));
         }
     }, []);
 
@@ -291,6 +345,7 @@ export default function MySuperApp() {
                     }));
 
                     if (importedProducts.length > 0) {
+                        const newIds = importedProducts.map(p => p.id);
                         setFavorites((prev) => {
                             const existingIds = new Set(prev.map(p => p.id));
                             const merged = [...prev];
@@ -304,6 +359,11 @@ export default function MySuperApp() {
                             localStorage.setItem('posokanei_favorites', JSON.stringify(merged));
                             alert(`Εισήχθησαν επιτυχώς ${importedProducts.length} προϊόντα στη λίστα σας! (${addedCount} νέα)`);
                             return merged;
+                        });
+                        setActiveBasketIds((prev) => {
+                            const mergedIds = Array.from(new Set([...prev, ...newIds]));
+                            localStorage.setItem('posokanei_active_basket', JSON.stringify(mergedIds));
+                            return mergedIds;
                         });
                         window.history.replaceState(null, '', ' ');
                     }
@@ -322,8 +382,18 @@ export default function MySuperApp() {
         let updated: Product[];
         if (isFav) {
             updated = favorites.filter(p => p.id !== product.id);
+            setActiveBasketIds(prev => {
+                const next = prev.filter(id => id !== product.id);
+                localStorage.setItem('posokanei_active_basket', JSON.stringify(next));
+                return next;
+            });
         } else {
             updated = [...favorites, product];
+            setActiveBasketIds(prev => {
+                const next = [...prev, product.id];
+                localStorage.setItem('posokanei_active_basket', JSON.stringify(next));
+                return next;
+            });
         }
         setFavorites(updated);
         localStorage.setItem('posokanei_favorites', JSON.stringify(updated));
@@ -332,9 +402,72 @@ export default function MySuperApp() {
     const clearAllFavorites = () => {
         if (confirm("Είστε σίγουροι ότι θέλετε να διαγράψετε όλα τα αγαπημένα σας προϊόντα;")) {
             setFavorites([]);
+            setActiveBasketIds([]);
             localStorage.removeItem('posokanei_favorites');
+            localStorage.removeItem('posokanei_active_basket');
         }
     };
+
+    const resetFilters = () => {
+        setSearchTerm('');
+        setSelectedCategoryId('');
+        setSelectedSubcategoryId('');
+        setCurrentPage(1);
+        setActiveTab('products');
+        setIsSidebarOpen(false);
+    };
+
+    const isHomeScreen = !searchTerm && !selectedCategoryId && !selectedSubcategoryId;
+
+    const handleCategoryClick = (catId: string) => {
+        setSelectedCategoryId(catId);
+        setSelectedSubcategoryId('');
+        setCurrentPage(1);
+        setActiveTab('products');
+        setOpenCategories(prev => ({
+            ...prev,
+            [catId]: true
+        }));
+    };
+
+    const getBreadcrumbs = () => {
+        const steps = [{ name: 'Αρχική', onClick: resetFilters }];
+        
+        if (selectedCategoryId) {
+            const cat = categories.find(c => c.category_id === selectedCategoryId);
+            if (cat) {
+                steps.push({
+                    name: cat.name,
+                    onClick: () => {
+                        setSelectedSubcategoryId('');
+                        setCurrentPage(1);
+                    }
+                });
+                
+                if (selectedSubcategoryId) {
+                    const sub = cat.children?.find(s => s.category_id === selectedSubcategoryId);
+                    if (sub) {
+                        steps.push({
+                            name: sub.name,
+                            onClick: () => {
+                                setCurrentPage(1);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        
+        if (searchTerm) {
+            steps.push({
+                name: `Αναζήτηση: "${searchTerm}"`,
+                onClick: () => {}
+            });
+        }
+        
+        return steps;
+    };
+    const breadcrumbs = getBreadcrumbs();
 
     // Calculate cheapest retailer for a product
     const getCheapestRetailer = (product: Product) => {
@@ -459,12 +592,12 @@ export default function MySuperApp() {
 
     // Generate Share Message Text
     const shareMessageText = useMemo(() => {
-        if (favorites.length === 0) return '';
+        if (activeBasketProducts.length === 0) return '';
         let text = `🛒 MySuper.gr - Λίστα Αγορών\n`;
         text += `================================\n\n`;
 
         text += `📋 Προϊόντα προς αγορά:\n`;
-        favorites.forEach(p => {
+        activeBasketProducts.forEach(p => {
             text += `- ${p.name}\n`;
         });
         text += `\n`;
@@ -473,7 +606,7 @@ export default function MySuperApp() {
         const results = ALLOWED_RETAILERS.map(retId => {
             let totalCost = 0;
             let itemsCount = 0;
-            favorites.forEach(prod => {
+            activeBasketProducts.forEach(prod => {
                 const priceObj = prod.retailer_prices.find(rp => rp.retailer === retId);
                 if (priceObj) {
                     totalCost += priceObj.price;
@@ -484,7 +617,7 @@ export default function MySuperApp() {
                 retailerId: retId,
                 totalCost,
                 itemsCount,
-                totalItems: favorites.length
+                totalItems: activeBasketProducts.length
             };
         });
 
@@ -503,7 +636,7 @@ export default function MySuperApp() {
 
         // 2. Split Trip
         const storeGrouping: { [key: string]: string[] } = {};
-        favorites.forEach(prod => {
+        activeBasketProducts.forEach(prod => {
             const cheapest = getCheapestRetailer(prod);
             if (cheapest) {
                 if (!storeGrouping[cheapest.retailer]) {
@@ -526,16 +659,16 @@ export default function MySuperApp() {
         }
 
         return text;
-    }, [favorites]);
+    }, [activeBasketProducts]);
 
     const webShareLink = useMemo(() => {
-        if (favorites.length === 0) return '';
-        const ids = favorites.map(p => p.id).join(',');
+        if (activeBasketProducts.length === 0) return '';
+        const ids = activeBasketProducts.map(p => p.id).join(',');
         if (typeof window !== 'undefined') {
             return `${window.location.origin}${window.location.pathname}#share=${ids}`;
         }
         return `#share=${ids}`;
-    }, [favorites]);
+    }, [activeBasketProducts]);
 
     // Copy handlers
     const copyText = () => {
@@ -553,19 +686,19 @@ export default function MySuperApp() {
     // Calculate Favorites Matrix Table columns
     const activeFavRetailers = useMemo(() => {
         const set = new Set<string>();
-        favorites.forEach(p => {
+        activeBasketProducts.forEach(p => {
             p.retailer_prices.forEach(rp => set.add(rp.retailer));
         });
         return Array.from(set);
-    }, [favorites]);
+    }, [activeBasketProducts]);
 
     // Single Store Run comparison
     const singleStoreResults = useMemo(() => {
-        if (favorites.length === 0) return [];
+        if (activeBasketProducts.length === 0) return [];
         return ALLOWED_RETAILERS.map(retId => {
             let totalCost = 0;
             let itemsCount = 0;
-            favorites.forEach(prod => {
+            activeBasketProducts.forEach(prod => {
                 const priceObj = prod.retailer_prices.find(rp => rp.retailer === retId);
                 if (priceObj) {
                     totalCost += priceObj.price;
@@ -576,13 +709,13 @@ export default function MySuperApp() {
                 retailerId: retId,
                 totalCost,
                 itemsCount,
-                totalItems: favorites.length,
-                percentage: favorites.length > 0 ? (itemsCount / favorites.length) * 100 : 0
+                totalItems: activeBasketProducts.length,
+                percentage: activeBasketProducts.length > 0 ? (itemsCount / activeBasketProducts.length) * 100 : 0
             };
         })
         .filter(res => res.itemsCount === res.totalItems)
         .sort((a, b) => a.totalCost - b.totalCost);
-    }, [favorites]);
+    }, [activeBasketProducts]);
 
     // Split trip calculation
     const splitTripData = useMemo(() => {
@@ -590,7 +723,7 @@ export default function MySuperApp() {
         let totalOptimizedCost = 0;
         let totalWorstCost = 0;
 
-        favorites.forEach(prod => {
+        activeBasketProducts.forEach(prod => {
             const cheapest = getCheapestRetailer(prod);
             if (cheapest) {
                 const maxPrice = prod.price_stats?.max_price || cheapest.price;
@@ -616,7 +749,7 @@ export default function MySuperApp() {
         const savings = totalWorstCost - totalOptimizedCost;
 
         return { groups, totalCost: totalOptimizedCost, savings };
-    }, [favorites]);
+    }, [activeBasketProducts]);
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans transition-colors duration-300">
@@ -625,20 +758,36 @@ export default function MySuperApp() {
                 {/* Collapsible/Drawer Sidebar */}
                 <aside className={`
                     fixed inset-y-0 left-0 z-40 w-80 bg-sidebar-bg border-r border-border-custom 
-                    backdrop-blur-xl transition-transform duration-300 md:relative md:translate-x-0 flex flex-col
+                    transition-transform duration-300 md:relative md:translate-x-0 flex flex-col
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 `}>
                     <div className="p-6 border-b border-border-custom flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <button 
+                            onClick={resetFilters}
+                            className="flex items-center gap-2 text-left hover:opacity-85 transition cursor-pointer focus:outline-none"
+                            title="Επιστροφή στην Αρχική"
+                        >
                             <ShoppingBasket className="w-6 h-6 text-indigo-500" />
                             <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent">MySuper.gr</h1>
-                        </div>
+                        </button>
                         <button className="md:hidden p-1 text-slate-500 hover:bg-input-custom rounded-lg" onClick={() => setIsSidebarOpen(false)}>
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <button 
+                            onClick={resetFilters}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold transition ${
+                                searchTerm === '' && selectedCategoryId === '' && activeTab === 'products'
+                                    ? 'bg-indigo-500/10 text-indigo-500' 
+                                    : 'text-slate-600 hover:bg-input-custom dark:text-slate-350'
+                            }`}
+                        >
+                            <Home className="w-4 h-4" />
+                            <span>Αρχική</span>
+                        </button>
+
                         <div className="flex items-center justify-between text-xs font-semibold text-slate-500 px-2">
                             <span>ΚΑΤΗΓΟΡΙΕΣ</span>
                             {loadingCategories && <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-500" />}
@@ -716,7 +865,7 @@ export default function MySuperApp() {
                 <div className="flex-1 flex flex-col overflow-hidden">
                     
                     {/* Header bar */}
-                    <header className="p-4 border-b border-border-custom bg-panel-bg backdrop-blur-md flex flex-wrap gap-4 items-center justify-between">
+                    <header className="p-4 border-b border-border-custom bg-panel-bg flex flex-wrap gap-4 items-center justify-between">
                         
                         <div className="flex items-center gap-3 flex-1 min-w-[200px]">
                             <button className="md:hidden p-2 hover:bg-input-custom rounded-xl" onClick={() => setIsSidebarOpen(true)}>
@@ -730,8 +879,17 @@ export default function MySuperApp() {
                                     value={searchTerm}
                                     onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                                     placeholder="Αναζήτηση προϊόντων (π.χ. γάλα, φέτα, ρύζι)..."
-                                    className="w-full pl-9 pr-4 py-2 text-sm bg-input-custom border border-transparent focus:border-indigo-500 focus:bg-background rounded-xl outline-none transition"
+                                    className="w-full pl-9 pr-10 py-2 text-sm bg-input-custom border border-transparent focus:border-indigo-500 focus:bg-background rounded-xl outline-none transition"
                                 />
+                                {searchTerm && (
+                                    <button 
+                                        onClick={() => setSearchTerm('')} 
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                                        title="Καθαρισμός αναζήτησης"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -753,11 +911,11 @@ export default function MySuperApp() {
                                     Προϊόντα
                                 </button>
                                 <button 
-                                    className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${activeTab === 'favorites' ? 'bg-background shadow text-rose-500' : 'text-slate-500 hover:text-foreground'}`}
+                                    className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${activeTab === 'favorites' ? 'bg-background shadow text-indigo-500' : 'text-slate-500 hover:text-foreground'}`}
                                     onClick={() => setActiveTab('favorites')}
                                 >
-                                    <Heart className="w-3.5 h-3.5 fill-current" />
-                                    <span>Λίστα ({favorites.length})</span>
+                                    <ShoppingBasket className="w-3.5 h-3.5" />
+                                    <span>Καλάθι ({activeBasketIds.length}/{favorites.length})</span>
                                 </button>
                             </div>
 
@@ -773,314 +931,676 @@ export default function MySuperApp() {
                     </header>
 
                     {/* Content Area */}
-                    <main className="flex-1 overflow-y-auto p-6">
+                    <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6">
                         {activeTab === 'products' ? (
-                            // PRODUCTS GRID VIEW
-                            <div>
-                                {products.length === 0 ? (
-                                    <div className="h-[60vh] flex flex-col items-center justify-center text-center max-w-sm mx-auto">
-                                        <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center text-3xl mb-4">🛒</div>
-                                        <h3 className="text-lg font-bold mb-1">Έτοιμοι για σύγκριση!</h3>
-                                        <p className="text-sm text-slate-500">Πληκτρολογήστε ένα προϊόν στην αναζήτηση ή επιλέξτε μια κατηγορία από το μενού.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-6">
-                                        <div className="flex items-center justify-between text-xs font-medium text-slate-400">
-                                            <span>Βρέθηκαν {totalProductsCount} προϊόντα</span>
+                            isHomeScreen ? (
+                                // BRAND-NEW HOMEPAGE DASHBOARD
+                                <div className="space-y-10 pb-12">
+                                    {/* Modern Hero Section */}
+                                    <div className="relative bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 text-white rounded-3xl p-8 md:p-12 shadow-xl overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                                        <div className="absolute bottom-0 left-0 w-60 h-60 bg-emerald-500/10 rounded-full blur-2xl -ml-20 -mb-20 pointer-events-none" />
+                                        
+                                        <div className="relative z-10 max-w-2xl">
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-[11px] font-semibold mb-4">
+                                                <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+                                                <span>Έξυπνη Σύγκριση Τιμών</span>
+                                            </div>
+                                            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">
+                                                Συγκρίνετε Τιμές Σούπερ Μάρκετ & Εξοικονομήστε Χρήματα
+                                            </h2>
+                                            <p className="text-sm md:text-base text-indigo-100 max-w-lg mt-3 font-medium">
+                                                Συνδέεται απευθείας με την επίσημη βάση δεδομένων e-katanalotis. Βρείτε τις χαμηλότερες τιμές, φτιάξτε το καλάθι σας και βελτιστοποιήστε τα έξοδά σας με ένα κλικ.
+                                            </p>
+                                            
+                                            <div className="relative max-w-md mt-6 shadow-lg rounded-2xl overflow-hidden">
+                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500" />
+                                                <input 
+                                                    type="text" 
+                                                    value={searchTerm}
+                                                    onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                                    placeholder="Αναζητήστε προϊόντα (π.χ. γάλα, ελαιόλαδο, φέτα)..."
+                                                    className="w-full pl-11 pr-4 py-3.5 text-sm bg-white text-slate-800 placeholder-slate-405 focus:bg-white rounded-2xl outline-none border-none shadow-inner transition"
+                                                />
+                                            </div>
                                         </div>
+                                    </div>
 
-                                        {loadingProducts ? (
-                                            <div className="h-60 flex items-center justify-center">
+                                    {/* Global Statistics Grid */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 px-1">
+                                            Στατιστικά Στοιχεία
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                            {[
+                                                {
+                                                    label: 'Προϊόντα στη Βάση',
+                                                    value: stats ? Number(stats.total_products).toLocaleString('el-GR') : '8.773',
+                                                    desc: 'Συνολικά καταχωρημένα προϊόντα',
+                                                    icon: <ShoppingBag className="w-5 h-5 text-indigo-500" />,
+                                                    bgColor: 'bg-indigo-500/10'
+                                                },
+                                                {
+                                                    label: 'Ενεργές Προσφορές',
+                                                    value: stats ? Number(stats.products_on_discount).toLocaleString('el-GR') : '2.263',
+                                                    desc: 'Προϊόντα με έκπτωση σήμερα',
+                                                    icon: <Percent className="w-5 h-5 text-emerald-500" />,
+                                                    bgColor: 'bg-emerald-500/10'
+                                                },
+                                                {
+                                                    label: 'Σούπερ Μάρκετ',
+                                                    value: `${ALLOWED_RETAILERS.length} αλυσίδες`,
+                                                    desc: 'Σύγκριση στις μεγαλύτερες αλυσίδες',
+                                                    icon: <Store className="w-5 h-5 text-amber-500" />,
+                                                    bgColor: 'bg-amber-500/10'
+                                                },
+                                                {
+                                                    label: 'Τελευταία Ενημέρωση',
+                                                    value: stats ? new Date(stats.timestamp).toLocaleDateString('el-GR') : 'Σήμερα',
+                                                    desc: 'Απευθείας από το e-katanalotis',
+                                                    icon: <RefreshCw className="w-5 h-5 text-violet-500" />,
+                                                    bgColor: 'bg-violet-500/10'
+                                                }
+                                            ].map((stat, idx) => (
+                                                <div key={idx} className="bg-card-bg border border-border-custom p-5 rounded-2xl shadow-sm hover:shadow-md transition duration-300 flex items-start gap-4">
+                                                    <div className={`p-3 rounded-xl ${stat.bgColor} flex items-center justify-center shrink-0`}>
+                                                        {stat.icon}
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xs text-slate-450 block font-medium">{stat.label}</span>
+                                                        <strong className="text-xl font-extrabold text-slate-800 dark:text-slate-100 block mt-1">{stat.value}</strong>
+                                                        <span className="text-[10px] text-slate-400 mt-0.5 block">{stat.desc}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Category Navigation */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 px-1">
+                                            Δημοφιλείς Κατηγορίες
+                                        </h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                                            {categories.map((cat) => {
+                                                const meta = CATEGORY_META[cat.category_id] || { emoji: '📦', gradient: 'from-slate-500/10 to-slate-600/10 text-slate-550' };
+                                                return (
+                                                    <button
+                                                        key={cat.category_id}
+                                                        onClick={() => handleCategoryClick(cat.category_id)}
+                                                        className={`
+                                                            flex flex-col items-center text-center p-5 rounded-2xl border border-border-custom 
+                                                            bg-gradient-to-br ${meta.gradient} shadow-sm hover:shadow-md transition duration-300 cursor-pointer group
+                                                        `}
+                                                    >
+                                                        <span className="text-3xl mb-3 group-hover:scale-110 transition duration-300">{meta.emoji}</span>
+                                                        <span className="text-xs font-bold text-slate-850 dark:text-slate-100 block truncate w-full">{cat.name}</span>
+                                                        <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold mt-1">
+                                                            {cat.total_product_count ? `${cat.total_product_count.toLocaleString('el-GR')} προϊόντα` : 'Δείτε όλα'}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                // SEARCH & BROWSE RESULTS VIEW
+                                <div className="space-y-6">
+                                    {/* Interactive Breadcrumbs */}
+                                    {breadcrumbs.length > 1 && (
+                                        <nav className="flex items-center gap-1.5 text-xs text-slate-450 font-medium flex-wrap mb-2">
+                                            {breadcrumbs.map((step, idx) => (
+                                                <React.Fragment key={idx}>
+                                                    {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+                                                    <button
+                                                        onClick={step.onClick}
+                                                        className={`hover:text-indigo-500 transition ${
+                                                            idx === breadcrumbs.length - 1 
+                                                                ? 'text-slate-805 dark:text-slate-200 font-semibold cursor-default' 
+                                                                : 'cursor-pointer'
+                                                        }`}
+                                                        disabled={idx === breadcrumbs.length - 1}
+                                                    >
+                                                        {step.name}
+                                                    </button>
+                                                </React.Fragment>
+                                            ))}
+                                        </nav>
+                                    )}
+
+                                    {/* Subcategory Filter Pills */}
+                                    {selectedCategoryId && (
+                                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none items-center">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedSubcategoryId('');
+                                                    setCurrentPage(1);
+                                                }}
+                                                className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                                                    !selectedSubcategoryId 
+                                                        ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20' 
+                                                        : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-650 dark:text-slate-300'
+                                                }`}
+                                            >
+                                                Όλα ({categories.find(c => c.category_id === selectedCategoryId)?.total_product_count || 0})
+                                            </button>
+                                            {categories.find(c => c.category_id === selectedCategoryId)?.children?.map(sub => (
+                                                <button
+                                                    key={sub.category_id}
+                                                    onClick={() => {
+                                                        setSelectedSubcategoryId(sub.category_id);
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                                                        selectedSubcategoryId === sub.category_id
+                                                            ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
+                                                            : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-650 dark:text-slate-300'
+                                                    }`}
+                                                >
+                                                    {sub.name} ({sub.total_product_count || 0})
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Results listing */}
+                                    {products.length === 0 ? (
+                                        <div className="h-[40vh] flex flex-col items-center justify-center text-center max-w-sm mx-auto">
+                                            {loadingProducts ? (
                                                 <RefreshCw className="w-8 h-8 animate-spin text-indigo-500" />
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                                {products.map(prod => {
-                                                    const isFav = favorites.some(p => p.id === prod.id);
-                                                    const cheapest = getCheapestRetailer(prod);
-                                                    return (
-                                                        <div 
-                                                            key={prod.id} 
-                                                            onClick={() => showProductDetails(prod)}
-                                                            className="group relative bg-card-bg backdrop-blur border border-border-custom hover:border-indigo-500/50 rounded-2xl shadow-sm hover:shadow-md transition duration-300 overflow-hidden cursor-pointer flex flex-col"
-                                                        >
-                                                            {cheapest?.is_discount && cheapest.discount_percentage && (
-                                                                <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full z-10">
-                                                                    -{cheapest.discount_percentage}%
-                                                                </div>
-                                                            )}
-
-                                                            <button 
-                                                                onClick={(e) => toggleFavorite(e, prod)}
-                                                                className={`absolute top-3 right-3 p-2 rounded-xl transition ${isFav ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-500/10 text-slate-400 hover:text-rose-500'}`}
-                                                            >
-                                                                <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
-                                                            </button>
-
-                                                            <div className="p-4 flex items-center justify-center bg-slate-500/5 h-44">
-                                                                <img 
-                                                                    src={prod.image_url} 
-                                                                    alt={prod.name}
-                                                                    className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal group-hover:scale-105 transition duration-300"
-                                                                    onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80' }}
-                                                                />
-                                                            </div>
-
-                                                            <div className="p-4 flex-1 flex flex-col justify-between">
-                                                                <div>
-                                                                    <span className="text-[10px] font-bold text-indigo-500 tracking-wider uppercase">{prod.brand || 'Γενικό'}</span>
-                                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-500 transition line-clamp-2 mt-1">{prod.name}</h4>
-                                                                </div>
-
-                                                                <div className="mt-4 pt-4 border-t border-border-custom flex items-end justify-between">
-                                                                    <div>
-                                                                        <span className="text-[10px] text-slate-400 block">Από</span>
-                                                                        <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">€{(prod.price_stats?.min_price || 0).toFixed(2)}</span>
-                                                                    </div>
-                                                                    <div className="text-[10px] text-slate-400 font-semibold mb-1">
-                                                                        {prod.unit_quantity} {prod.unit}
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="mt-3 flex items-center gap-1.5">
-                                                                    {prod.retailer_prices.map(rp => (
-                                                                        <img 
-                                                                            key={rp.retailer}
-                                                                            className="w-5 h-5 rounded-full border border-border-custom object-cover" 
-                                                                            src={`https://api.posokanei.gov.gr/images/retailer/${rp.retailer}`} 
-                                                                            title={RETAILER_META[rp.retailer]?.name || rp.retailer}
-                                                                            onError={(e) => { (e.target as any).style.display = 'none' }}
-                                                                        />
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-
-                                        {/* Pagination */}
-                                        <div className="pt-8 flex items-center justify-between border-t border-border-custom">
-                                            <button 
-                                                disabled={currentPage === 1}
-                                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                                className="px-4 py-2 text-xs font-semibold bg-background border border-border-custom disabled:opacity-50 disabled:cursor-not-allowed rounded-xl hover:bg-input-custom transition text-foreground"
-                                            >
-                                                Προηγούμενη
-                                            </button>
-                                            <span className="text-xs text-slate-400 font-medium">Σελίδα {currentPage} από {totalPages}</span>
-                                            <button 
-                                                disabled={currentPage === totalPages}
-                                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                                className="px-4 py-2 text-xs font-semibold bg-background border border-border-custom disabled:opacity-50 disabled:cursor-not-allowed rounded-xl hover:bg-input-custom transition text-foreground"
-                                            >
-                                                Επόμενη
-                                            </button>
+                                            ) : (
+                                                <>
+                                                    <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center text-3xl mb-4">🔍</div>
+                                                    <h3 className="text-lg font-bold mb-1">Δεν βρέθηκαν προϊόντα</h3>
+                                                    <p className="text-sm text-slate-500 mb-4">Δοκιμάστε να αλλάξετε τα φίλτρα ή την αναζήτησή σας.</p>
+                                                    <button 
+                                                        onClick={resetFilters} 
+                                                        className="px-4 py-2 bg-indigo-500 text-white text-xs font-bold rounded-xl hover:bg-indigo-600 transition cursor-pointer"
+                                                    >
+                                                        Επαναφορά Φίλτρων
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            <div className="flex items-center justify-between text-xs font-medium text-slate-450">
+                                                <span>Βρέθηκαν {totalProductsCount} προϊόντα</span>
+                                            </div>
+
+                                            {loadingProducts ? (
+                                                <div className="h-60 flex items-center justify-center">
+                                                    <RefreshCw className="w-8 h-8 animate-spin text-indigo-500" />
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                    {products.map(prod => {
+                                                        const isFav = favorites.some(p => p.id === prod.id);
+                                                        const cheapest = getCheapestRetailer(prod);
+                                                        return (
+                                                            <div 
+                                                                key={prod.id} 
+                                                                onClick={() => showProductDetails(prod)}
+                                                                className="group relative bg-card-bg border border-border-custom hover:border-indigo-500/50 rounded-2xl shadow-sm hover:shadow-md transition duration-300 overflow-hidden cursor-pointer flex flex-col"
+                                                            >
+                                                                {cheapest?.is_discount && cheapest.discount_percentage && (
+                                                                    <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full z-10">
+                                                                        -{cheapest.discount_percentage}%
+                                                                    </div>
+                                                                )}
+
+                                                                <button 
+                                                                    onClick={(e) => toggleFavorite(e, prod)}
+                                                                    className={`absolute top-3 right-3 p-2 rounded-xl transition ${isFav ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-500/10 text-slate-400 hover:text-rose-500'}`}
+                                                                >
+                                                                    <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+                                                                </button>
+
+                                                                <div className="p-4 flex items-center justify-center bg-slate-500/5 h-44">
+                                                                    <img 
+                                                                        src={prod.image_url} 
+                                                                        alt={prod.name}
+                                                                        className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal group-hover:scale-105 transition duration-300"
+                                                                        onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80' }}
+                                                                    />
+                                                                </div>
+
+                                                                <div className="p-4 flex-1 flex flex-col justify-between">
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-indigo-500 tracking-wider uppercase">{prod.brand || 'Γενικό'}</span>
+                                                                        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-500 transition line-clamp-2 mt-1">{prod.name}</h4>
+                                                                    </div>
+
+                                                                    <div className="mt-4 pt-4 border-t border-border-custom flex items-end justify-between">
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-450 block">Από</span>
+                                                                            <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">€{(prod.price_stats?.min_price || 0).toFixed(2)}</span>
+                                                                        </div>
+                                                                        <div className="text-[10px] text-slate-450 font-semibold mb-1">
+                                                                            {prod.unit_quantity} {prod.unit}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="mt-3 flex items-center gap-1.5">
+                                                                        {prod.retailer_prices.map(rp => (
+                                                                            <img 
+                                                                                key={rp.retailer}
+                                                                                className="w-5 h-5 rounded-full border border-border-custom object-cover" 
+                                                                                src={`https://api.posokanei.gov.gr/images/retailer/${rp.retailer}`} 
+                                                                                title={RETAILER_META[rp.retailer]?.name || rp.retailer}
+                                                                                onError={(e) => { (e.target as any).style.display = 'none' }}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            {/* Pagination */}
+                                            <div className="pt-8 flex items-center justify-between border-t border-border-custom">
+                                                <button 
+                                                    disabled={currentPage === 1}
+                                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                    className="px-4 py-2 text-xs font-semibold bg-background border border-border-custom disabled:opacity-50 disabled:cursor-not-allowed rounded-xl hover:bg-input-custom transition text-foreground"
+                                                >
+                                                    Προηγούμενη
+                                                </button>
+                                                <span className="text-xs text-slate-450 font-medium">Σελίδα {currentPage} από {totalPages}</span>
+                                                <button 
+                                                    disabled={currentPage === totalPages}
+                                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                                    className="px-4 py-2 text-xs font-semibold bg-background border border-border-custom disabled:opacity-50 disabled:cursor-not-allowed rounded-xl hover:bg-input-custom transition text-foreground"
+                                                >
+                                                    Επόμενη
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )
                         ) : (
                             // FAVORITES & BASKET OPTIMIZER VIEW
                             <div className="space-y-8">
                                 {favorites.length === 0 ? (
                                     <div className="h-[60vh] flex flex-col items-center justify-center text-center max-w-sm mx-auto">
-                                        <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 mb-4"><Heart className="w-8 h-8 fill-current" /></div>
+                                        <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 mb-4">
+                                            <Heart className="w-8 h-8 fill-current" />
+                                        </div>
                                         <h3 className="text-lg font-bold mb-1">Η λίστα σας είναι άδεια</h3>
                                         <p className="text-sm text-slate-500">Προσθέστε προϊόντα στα αγαπημένα σας για να τα συγκρίνετε και να τα βελτιστοποιήσετε εδώ.</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-8">
+                                    <div className="space-y-6">
                                         
-                                        {/* Favorites Table Card */}
-                                        <div className="bg-card-bg backdrop-blur border border-border-custom rounded-2xl p-6 shadow-sm">
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                                                <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Σύγκριση Τιμών Αγαπημένων ανά Σούπερ Μάρκετ</h3>
-                                                <div className="flex gap-2.5">
-                                                    <button 
-                                                        onClick={() => setIsShareOpen(true)}
-                                                        className="px-4 py-2 text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 rounded-xl flex items-center gap-1.5 transition"
-                                                    >
-                                                        <Share2 className="w-3.5 h-3.5" />
-                                                        <span>Κοινοποίηση Λίστας</span>
-                                                    </button>
-                                                    <button 
-                                                        onClick={clearAllFavorites}
-                                                        className="px-4 py-2 text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 rounded-xl flex items-center gap-1.5 transition"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                        <span>Καθαρισμός Λίστας</span>
-                                                    </button>
-                                                </div>
+                                        {/* Sub-tab Navigation */}
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-border-custom gap-4">
+                                            <div>
+                                                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                                    <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+                                                    <span>Τα Αγαπημένα μου</span>
+                                                </h2>
+                                                <p className="text-xs text-slate-400 mt-1">Διαχειριστείτε τη λίστα Pantry και το ενεργό καλάθι αγορών σας.</p>
                                             </div>
 
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full text-left text-sm border-collapse">
-                                                    <thead>
-                                                        <tr className="border-b border-border-custom">
-                                                            <th className="py-3 px-4 font-bold text-slate-400 text-xs uppercase">Προϊόν</th>
-                                                            <th className="py-3 px-4 font-bold text-slate-400 text-xs uppercase text-center bg-indigo-500/5">Φθηνότερο</th>
-                                                            {activeFavRetailers.map(retId => (
-                                                                <th key={retId} className="py-3 px-4 text-center">
-                                                                    <div className="flex flex-col items-center gap-1">
-                                                                        <img className="w-6 h-6 rounded-full object-cover" src={`https://api.posokanei.gov.gr/images/retailer/${retId}`} alt="" />
-                                                                        <span className="text-[10px] font-semibold text-slate-500">{RETAILER_META[retId]?.name || retId}</span>
-                                                                    </div>
-                                                                </th>
-                                                            ))}
-                                                            <th className="py-3 px-4"></th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {favorites.map(prod => {
-                                                            const cheapest = getCheapestRetailer(prod);
-                                                            return (
-                                                                <tr key={prod.id} className="border-b border-border-custom/50 hover:bg-slate-500/5 transition">
-                                                                    <td className="py-3 px-4 flex items-center gap-3 min-w-[280px]">
-                                                                        <img src={prod.image_url} alt="" className="w-10 h-10 object-contain rounded bg-white" onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }} />
-                                                                        <div>
-                                                                            <span className="text-[10px] font-semibold text-indigo-500 block">{prod.brand}</span>
-                                                                            <strong className="text-xs font-semibold text-slate-800 dark:text-slate-100">{prod.name}</strong>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="py-3 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400 bg-indigo-500/5">
-                                                                        €{cheapest?.price.toFixed(2)}
-                                                                    </td>
-                                                                    {activeFavRetailers.map(retId => {
-                                                                        const priceObj = prod.retailer_prices.find(rp => rp.retailer === retId);
-                                                                        const isCheapest = priceObj && cheapest && priceObj.price === cheapest.price;
-                                                                        return (
-                                                                            <td key={retId} className={`py-3 px-4 text-center font-semibold text-xs ${isCheapest ? 'text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/5' : 'text-slate-500 dark:text-slate-400'}`}>
-                                                                                {priceObj ? `€${priceObj.price.toFixed(2)}` : '-'}
-                                                                            </td>
-                                                                        );
-                                                                    })}
-                                                                    <td className="py-3 px-4 text-center">
-                                                                        <button 
-                                                                            onClick={(e) => toggleFavorite(e, prod)}
-                                                                            className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition"
-                                                                        >
-                                                                            <Trash2 className="w-4 h-4" />
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
+                                            <div className="flex bg-input-custom p-1 rounded-xl w-full sm:w-auto border border-border-custom/50">
+                                                <button 
+                                                    className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${favoritesSubTab === 'pantry' ? 'bg-background shadow text-indigo-500 dark:text-indigo-400' : 'text-slate-500 hover:text-foreground'}`}
+                                                    onClick={() => setFavoritesSubTab('pantry')}
+                                                >
+                                                    <ShoppingBag className="w-3.5 h-3.5" />
+                                                    <span>Λίστα Pantry ({favorites.length})</span>
+                                                </button>
+                                                <button 
+                                                    className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${favoritesSubTab === 'basket' ? 'bg-background shadow text-emerald-500 dark:text-emerald-400' : 'text-slate-500 hover:text-foreground'}`}
+                                                    onClick={() => setFavoritesSubTab('basket')}
+                                                >
+                                                    <ShoppingBasket className="w-3.5 h-3.5" />
+                                                    <span>Ενεργό Καλάθι ({activeBasketIds.length})</span>
+                                                </button>
                                             </div>
                                         </div>
 
-                                        {/* Optimizer Grid */}
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                            
-                                            {/* Optimizer 1: Single Store */}
-                                            <div className="bg-card-bg backdrop-blur border border-border-custom rounded-2xl p-6 shadow-sm flex flex-col">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Store className="w-5 h-5 text-indigo-500" />
-                                                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Αγορά από 1 Σούπερ Μάρκετ</h3>
-                                                </div>
-                                                <p className="text-xs text-slate-400 mb-6">Σύγκριση του συνολικού κόστους για όλα τα αγαπημένα σας προϊόντα αν τα αγοράσετε από ένα μόνο κατάστημα.</p>
-                                                
-                                                <div className="space-y-4 flex-1">
-                                                    {singleStoreResults.length === 0 ? (
-                                                        <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-500/5 rounded-xl p-4 border border-border-custom">
-                                                            <Info className="w-8 h-8 text-amber-500 mb-2" />
-                                                            <div className="text-xs font-bold text-slate-600 dark:text-slate-300">Κανένα κατάστημα δεν έχει όλα τα προϊόντα</div>
-                                                            <p className="text-[10px] text-slate-400 mt-1 max-w-[240px]">Κανένα μεμονωμένο σούπερ μάρκετ δεν διαθέτει το 100% των επιλογών σας. Δείτε την πρόταση Split-Trip παρακάτω για αγορά από τα φθηνότερα.</p>
-                                                        </div>
-                                                    ) : (
-                                                        singleStoreResults.map((res, index) => {
-                                                            const meta = RETAILER_META[res.retailerId] || { name: res.retailerId };
-                                                            const isWinner = index === 0;
-                                                            
-                                                            return (
-                                                                <div 
-                                                                    key={res.retailerId}
-                                                                    onClick={() => setActiveMapRetailer(res.retailerId)}
-                                                                    className={`
-                                                                        flex items-center justify-between p-4 rounded-xl border transition cursor-pointer
-                                                                        ${isWinner 
-                                                                            ? 'bg-emerald-500/5 border-emerald-500/30 dark:border-emerald-500/20 shadow-emerald-500/5 shadow-md hover:border-emerald-500/50' 
-                                                                            : 'bg-slate-500/5 border-transparent hover:border-border-custom'}
-                                                                    `}
-                                                                    title="Κάντε κλικ για προβολή στο χάρτη"
-                                                                >
-                                                                    <div className="flex items-center gap-3">
-                                                                        <img className="w-9 h-9 rounded-full object-cover border border-border-custom" src={`https://api.posokanei.gov.gr/images/retailer/${res.retailerId}`} alt="" />
-                                                                        <div>
-                                                                            <div className="text-xs font-bold flex items-center gap-1">
-                                                                                <span>{meta.name}</span>
-                                                                                {isWinner && <Trophy className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
-                                                                            </div>
-                                                                            <div className="text-[10px] text-slate-400 font-semibold">{res.itemsCount}/{res.totalItems} προϊόντα • 100% διαθεσιμότητα</div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="text-right">
-                                                                        <div className={`text-base font-extrabold ${isWinner ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-350'}`}>€{res.totalCost.toFixed(2)}</div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Optimizer 2: Split Trip */}
-                                            <div className="bg-card-bg backdrop-blur border border-border-custom rounded-2xl p-6 shadow-sm flex flex-col">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <PiggyBank className="w-5 h-5 text-emerald-500" />
-                                                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Βέλτιστος Διαμοιρασμός (Split-Trip)</h3>
-                                                </div>
-                                                <p className="text-xs text-slate-400 mb-6">Συνδυασμός καταστημάτων αγοράζοντας κάθε προϊόν από εκεί που είναι φθηνότερο για τη μέγιστη εξοικονόμηση.</p>
-
-                                                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-center justify-between mb-6">
+                                        {favoritesSubTab === 'pantry' ? (
+                                            /* Pantry List Sub-Tab */
+                                            <div className="bg-card-bg border border-border-custom rounded-2xl p-6 shadow-sm">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                                     <div>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Συνολικό Κόστος</span>
-                                                        <strong className="text-2xl font-black text-emerald-500">€{splitTripData.totalCost.toFixed(2)}</strong>
+                                                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                                            <ShoppingBag className="w-5 h-5 text-indigo-500" />
+                                                            <span>Λίστα Pantry</span>
+                                                        </h3>
+                                                        <p className="text-xs text-slate-400 mt-1">Επιλέξτε ποια προϊόντα θα προστεθούν στο ενεργό καλάθι για βελτιστοποίηση.</p>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Εξοικονόμηση</span>
-                                                        <strong className="text-base font-bold text-white bg-emerald-500 px-3 py-1 rounded-lg inline-block mt-0.5">€{splitTripData.savings.toFixed(2)}</strong>
+                                                    <div className="flex gap-2.5">
+                                                        <button 
+                                                            onClick={selectAllBasketItems}
+                                                            className="px-3 py-1.5 text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-xl transition"
+                                                        >
+                                                            Επιλογή Όλων
+                                                        </button>
+                                                        <button 
+                                                            onClick={deselectAllBasketItems}
+                                                            className="px-3 py-1.5 text-xs font-semibold bg-slate-500/10 text-slate-650 dark:text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 rounded-xl transition"
+                                                        >
+                                                            Απεπιλογή Όλων
+                                                        </button>
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-4 overflow-y-auto max-h-[300px] flex-1 pr-1">
-                                                    {splitTripData.groups.map(group => {
-                                                        const meta = RETAILER_META[group.retailerId] || { name: group.retailerId };
+                                                {/* Pantry Selection Grid */}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                                                    {favorites.map(prod => {
+                                                        const isSelected = activeBasketIds.includes(prod.id);
+                                                        const cheapest = getCheapestRetailer(prod);
                                                         return (
-                                                            <div key={group.retailerId} className="border border-border-custom rounded-xl overflow-hidden">
-                                                                <div className="p-3 bg-slate-500/10 flex items-center justify-between border-b border-border-custom">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <img className="w-5 h-5 rounded-full object-cover" src={`https://api.posokanei.gov.gr/images/retailer/${group.retailerId}`} alt="" />
-                                                                        <span className="text-xs font-bold">{meta.name}</span>
-                                                                        <button 
-                                                                            onClick={() => setActiveMapRetailer(group.retailerId)}
-                                                                            className="p-1 hover:bg-slate-500/15 rounded-lg text-indigo-500 hover:text-indigo-600 transition ml-1"
-                                                                            title="Προβολή στο χάρτη"
-                                                                        >
-                                                                            <MapPin className="w-3.5 h-3.5" />
-                                                                        </button>
-                                                                    </div>
-                                                                    <strong className="text-xs text-emerald-500 font-extrabold">€{group.total.toFixed(2)}</strong>
+                                                            <div 
+                                                                key={prod.id}
+                                                                onClick={() => toggleBasketItem(prod.id)}
+                                                                className={`
+                                                                    relative p-4 rounded-xl border transition cursor-pointer flex items-center gap-3 select-none
+                                                                    ${isSelected 
+                                                                        ? 'bg-indigo-500/5 border-indigo-500/45 dark:border-indigo-500/30 shadow-sm' 
+                                                                        : 'bg-slate-500/5 border-transparent opacity-60 hover:opacity-100'}
+                                                                `}
+                                                            >
+                                                                <div className="flex items-center justify-center bg-white rounded p-1 w-10 h-10 border border-border-custom">
+                                                                    <img 
+                                                                        src={prod.image_url} 
+                                                                        alt="" 
+                                                                        className="max-h-full max-w-full object-contain"
+                                                                        onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }}
+                                                                    />
                                                                 </div>
-                                                                <div className="p-2 space-y-1 bg-white/20 dark:bg-slate-950/20">
-                                                                    {group.items.map((item, idx) => (
-                                                                        <div key={idx} className="flex justify-between items-center text-[10px] text-slate-500 px-2 py-1">
-                                                                            <span className="truncate max-w-[240px]">{item.name}</span>
-                                                                            <span className="font-semibold text-slate-700 dark:text-slate-300">€{item.price.toFixed(2)}</span>
-                                                                        </div>
-                                                                    ))}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <span className="text-[9px] font-bold text-indigo-500 block uppercase tracking-wider truncate">{prod.brand || 'Γενικό'}</span>
+                                                                    <strong className="text-xs font-semibold text-slate-800 dark:text-slate-100 block truncate">{prod.name}</strong>
+                                                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
+                                                                        {cheapest ? `Από €${cheapest.price.toFixed(2)}` : '-'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={isSelected}
+                                                                        readOnly
+                                                                        className="w-4 h-4 rounded text-indigo-500 border-slate-300 focus:ring-indigo-500 pointer-events-none"
+                                                                    />
+                                                                    <button 
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            toggleFavorite(e, prod);
+                                                                        }}
+                                                                        className="p-1 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 rounded transition"
+                                                                        title="Αφαίρεση από Pantry"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         );
                                                     })}
                                                 </div>
                                             </div>
+                                        ) : (
+                                            /* Active Shopping Basket Sub-Tab */
+                                            activeBasketProducts.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-16 text-center bg-slate-500/5 rounded-2xl border border-dashed border-border-custom p-6 max-w-md mx-auto my-12">
+                                                    <ShoppingBag className="w-12 h-12 text-indigo-500 mb-3 animate-pulse" />
+                                                    <div className="text-sm font-bold text-slate-800 dark:text-slate-200">Το Καλάθι σας είναι άδειο</div>
+                                                    <p className="text-xs text-slate-400 mt-1 max-w-[280px] mb-4">Επιλέξτε προϊόντα από τη λίστα Pantry για να ενεργοποιήσετε τους αλγόριθμους σύγκρισης και βελτιστοποίησης τιμών.</p>
+                                                    <button 
+                                                        onClick={() => setFavoritesSubTab('pantry')}
+                                                        className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition"
+                                                    >
+                                                        Μετάβαση στη λίστα Pantry
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-8">
+                                                    {/* Active Basket Items Quick Toggle/Summary Grid */}
+                                                    <div className="bg-card-bg border border-border-custom rounded-2xl p-6 shadow-sm">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                                            <div>
+                                                                <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                                                    <ShoppingBasket className="w-5 h-5 text-indigo-500" />
+                                                                    <span>Προϊόντα στο Ενεργό Καλάθι ({activeBasketProducts.length})</span>
+                                                                </h3>
+                                                                <p className="text-xs text-slate-400 mt-1">Ενεργά προϊόντα που συμμετέχουν στη βελτιστοποίηση. Ξεκλικάρετε για να τα εξαιρέσετε προσωρινά.</p>
+                                                            </div>
+                                                            <div className="flex gap-2.5">
+                                                                <button 
+                                                                    onClick={deselectAllBasketItems}
+                                                                    className="px-3 py-1.5 text-xs font-semibold bg-slate-500/10 text-slate-650 dark:text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 rounded-xl transition"
+                                                                >
+                                                                    Απεπιλογή Όλων
+                                                                </button>
+                                                            </div>
+                                                        </div>
 
-                                        </div>
+                                                        {/* Active Basket Selection Grid */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                                                            {activeBasketProducts.map(prod => {
+                                                                const cheapest = getCheapestRetailer(prod);
+                                                                return (
+                                                                    <div 
+                                                                        key={prod.id}
+                                                                        onClick={() => toggleBasketItem(prod.id)}
+                                                                        className="relative p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 transition cursor-pointer flex items-center gap-3 select-none hover:bg-indigo-500/10"
+                                                                    >
+                                                                        <div className="flex items-center justify-center bg-white rounded p-1 w-10 h-10 border border-border-custom">
+                                                                            <img 
+                                                                                src={prod.image_url} 
+                                                                                alt="" 
+                                                                                className="max-h-full max-w-full object-contain"
+                                                                                onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }}
+                                                                            />
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <span className="text-[9px] font-bold text-indigo-500 block uppercase tracking-wider truncate">{prod.brand || 'Γενικό'}</span>
+                                                                            <strong className="text-xs font-semibold text-slate-800 dark:text-slate-100 block truncate">{prod.name}</strong>
+                                                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
+                                                                                {cheapest ? `Από €${cheapest.price.toFixed(2)}` : '-'}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <input 
+                                                                                type="checkbox" 
+                                                                                checked={true}
+                                                                                readOnly
+                                                                                className="w-4 h-4 rounded text-indigo-500 border-indigo-500 focus:ring-indigo-500 pointer-events-none"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
 
+                                                    {/* Favorites Table Card */}
+                                                    <div className="bg-card-bg border border-border-custom rounded-2xl p-6 shadow-sm">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                                            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Σύγκριση Τιμών Καλαθιού ανά Σούπερ Μάρκετ</h3>
+                                                            <div className="flex gap-2.5">
+                                                                <button 
+                                                                    onClick={() => setIsShareOpen(true)}
+                                                                    className="px-4 py-2 text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 rounded-xl flex items-center gap-1.5 transition"
+                                                                >
+                                                                    <Share2 className="w-3.5 h-3.5" />
+                                                                    <span>Κοινοποίηση Λίστας</span>
+                                                                </button>
+                                                                <button 
+                                                                    onClick={clearAllFavorites}
+                                                                    className="px-4 py-2 text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 rounded-xl flex items-center gap-1.5 transition"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                    <span>Καθαρισμός Λίστας</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="overflow-x-auto">
+                                                            <table className="w-full text-left text-sm border-collapse">
+                                                                <thead>
+                                                                    <tr className="border-b border-border-custom">
+                                                                        <th className="py-3 px-4 font-bold text-slate-400 text-xs uppercase">Προϊόν</th>
+                                                                        <th className="py-3 px-4 font-bold text-slate-400 text-xs uppercase text-center bg-indigo-500/5">Φθηνότερο</th>
+                                                                        {activeFavRetailers.map(retId => (
+                                                                            <th key={retId} className="py-3 px-4 text-center">
+                                                                                <div className="flex flex-col items-center gap-1">
+                                                                                    <img className="w-6 h-6 rounded-full object-cover" src={`https://api.posokanei.gov.gr/images/retailer/${retId}`} alt="" />
+                                                                                    <span className="text-[10px] font-semibold text-slate-500">{RETAILER_META[retId]?.name || retId}</span>
+                                                                                </div>
+                                                                            </th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {activeBasketProducts.map(prod => {
+                                                                        const cheapest = getCheapestRetailer(prod);
+                                                                        return (
+                                                                            <tr key={prod.id} className="border-b border-border-custom/50 hover:bg-slate-500/5 transition">
+                                                                                <td className="py-3 px-4 flex items-center gap-3 min-w-[280px]">
+                                                                                    <img src={prod.image_url} alt="" className="w-10 h-10 object-contain rounded bg-white" onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }} />
+                                                                                    <div>
+                                                                                        <span className="text-[10px] font-semibold text-indigo-500 block">{prod.brand}</span>
+                                                                                        <strong className="text-xs font-semibold text-slate-800 dark:text-slate-100">{prod.name}</strong>
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td className="py-3 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400 bg-indigo-500/5">
+                                                                                    €{cheapest?.price.toFixed(2)}
+                                                                                </td>
+                                                                                {activeFavRetailers.map(retId => {
+                                                                                    const priceObj = prod.retailer_prices.find(rp => rp.retailer === retId);
+                                                                                    const isCheapest = priceObj && cheapest && priceObj.price === cheapest.price;
+                                                                                    return (
+                                                                                        <td key={retId} className={`py-3 px-4 text-center font-semibold text-xs ${isCheapest ? 'text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/5' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                                                            {priceObj ? `€${priceObj.price.toFixed(2)}` : '-'}
+                                                                                        </td>
+                                                                                    );
+                                                                                })}
+                                                                            </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Optimizer Grid */}
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                                        
+                                                        {/* Optimizer 1: Single Store */}
+                                                        <div className="bg-card-bg border border-border-custom rounded-2xl p-6 shadow-sm flex flex-col">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <Store className="w-5 h-5 text-indigo-500" />
+                                                                <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Αγορά από 1 Σούπερ Μάρκετ</h3>
+                                                            </div>
+                                                            <p className="text-xs text-slate-400 mb-6">Σύγκριση του συνολικού κόστους για όλα τα αγαπημένα σας προϊόντα αν τα αγοράσετε από ένα μόνο κατάστημα.</p>
+                                                            
+                                                            <div className="space-y-4 flex-1">
+                                                                {singleStoreResults.length === 0 ? (
+                                                                    <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-500/5 rounded-xl p-4 border border-border-custom">
+                                                                        <Info className="w-8 h-8 text-amber-500 mb-2" />
+                                                                        <div className="text-xs font-bold text-slate-600 dark:text-slate-300">Κανένα κατάστημα δεν έχει όλα τα προϊόντα</div>
+                                                                        <p className="text-[10px] text-slate-400 mt-1 max-w-[240px]">Κανένα μεμονωμένο σούπερ μάρκετ δεν διαθέτει το 100% των επιλογών σας. Δείτε την πρόταση Split-Trip παρακάτω για αγορά από τα φθηνότερα.</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    singleStoreResults.map((res, index) => {
+                                                                        const meta = RETAILER_META[res.retailerId] || { name: res.retailerId };
+                                                                        const isWinner = index === 0;
+                                                                        
+                                                                        return (
+                                                                            <div 
+                                                                                key={res.retailerId}
+                                                                                onClick={() => setActiveMapRetailer(res.retailerId)}
+                                                                                className={`
+                                                                                    flex items-center justify-between p-4 rounded-xl border transition cursor-pointer
+                                                                                    ${isWinner 
+                                                                                        ? 'bg-emerald-500/5 border-emerald-500/30 dark:border-emerald-500/20 shadow-emerald-500/5 shadow-md hover:border-emerald-500/50' 
+                                                                                        : 'bg-slate-500/5 border-transparent hover:border-border-custom'}
+                                                                                `}
+                                                                                title="Κάντε κλικ για προβολή στο χάρτη"
+                                                                            >
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <img className="w-9 h-9 rounded-full object-cover border border-border-custom" src={`https://api.posokanei.gov.gr/images/retailer/${res.retailerId}`} alt="" />
+                                                                                    <div>
+                                                                                        <div className="text-xs font-bold flex items-center gap-1">
+                                                                                            <span>{meta.name}</span>
+                                                                                            {isWinner && <Trophy className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
+                                                                                        </div>
+                                                                                        <div className="text-[10px] text-slate-400 font-semibold">{res.itemsCount}/{res.totalItems} προϊόντα • 100% διαθεσιμότητα</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="text-right">
+                                                                                    <div className={`text-base font-extrabold ${isWinner ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-350'}`}>€{res.totalCost.toFixed(2)}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Optimizer 2: Split Trip */}
+                                                        <div className="bg-card-bg border border-border-custom rounded-2xl p-6 shadow-sm flex flex-col">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <PiggyBank className="w-5 h-5 text-emerald-500" />
+                                                                <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Βέλτιστος Διαμοιρασμός (Split-Trip)</h3>
+                                                            </div>
+                                                            <p className="text-xs text-slate-400 mb-6">Συνδυασμός καταστημάτων αγοράζοντας κάθε προϊόν από εκεί που είναι φθηνότερο για τη μέγιστη εξοικονόμηση.</p>
+
+                                                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-center justify-between mb-6">
+                                                                <div>
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Συνολικό Κόστος</span>
+                                                                    <strong className="text-2xl font-black text-emerald-500">€{splitTripData.totalCost.toFixed(2)}</strong>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Εξοικονόμηση</span>
+                                                                    <strong className="text-base font-bold text-white bg-emerald-500 px-3 py-1 rounded-lg inline-block mt-0.5">€{splitTripData.savings.toFixed(2)}</strong>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-4 overflow-y-auto max-h-[300px] flex-1 pr-1">
+                                                                {splitTripData.groups.map(group => {
+                                                                    const meta = RETAILER_META[group.retailerId] || { name: group.retailerId };
+                                                                    return (
+                                                                        <div key={group.retailerId} className="border border-border-custom rounded-xl overflow-hidden">
+                                                                            <div className="p-3 bg-slate-500/10 flex items-center justify-between border-b border-border-custom">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <img className="w-5 h-5 rounded-full object-cover" src={`https://api.posokanei.gov.gr/images/retailer/${group.retailerId}`} alt="" />
+                                                                                    <span className="text-xs font-bold">{meta.name}</span>
+                                                                                    <button 
+                                                                                        onClick={() => setActiveMapRetailer(group.retailerId)}
+                                                                                        className="p-1 hover:bg-slate-500/15 rounded-lg text-indigo-500 hover:text-indigo-600 transition ml-1"
+                                                                                        title="Προβολή στο χάρτη"
+                                                                                    >
+                                                                                        <MapPin className="w-3.5 h-3.5" />
+                                                                                    </button>
+                                                                                </div>
+                                                                                <strong className="text-xs text-emerald-500 font-extrabold">€{group.total.toFixed(2)}</strong>
+                                                                            </div>
+                                                                            <div className="p-2 space-y-1 bg-white/20 dark:bg-slate-950/20">
+                                                                                {group.items.map((item, idx) => (
+                                                                                    <div key={idx} className="flex justify-between items-center text-[10px] text-slate-500 px-2 py-1">
+                                                                                        <span className="truncate max-w-[240px]">{item.name}</span>
+                                                                                        <span className="font-semibold text-slate-700 dark:text-slate-300">€{item.price.toFixed(2)}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -1091,7 +1611,7 @@ export default function MySuperApp() {
                 {/* Details Drawer */}
                 <div className={`
                     fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] bg-sidebar-bg border-l border-border-custom 
-                    backdrop-blur-xl shadow-2xl transition-transform duration-300 flex flex-col
+                    shadow-2xl transition-transform duration-300 flex flex-col
                     ${isDetailOpen ? 'translate-x-0' : 'translate-x-full'}
                 `}>
                     {selectedProduct && (
@@ -1150,7 +1670,7 @@ export default function MySuperApp() {
                 {/* Share Drawer */}
                 <div className={`
                     fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] bg-sidebar-bg border-l border-border-custom 
-                    backdrop-blur-xl shadow-2xl transition-transform duration-300 flex flex-col
+                    shadow-2xl transition-transform duration-300 flex flex-col
                     ${isShareOpen ? 'translate-x-0' : 'translate-x-full'}
                 `}>
                     <div className="p-6 border-b border-border-custom flex items-center justify-between">
@@ -1203,7 +1723,7 @@ export default function MySuperApp() {
                 {/* Map Drawer */}
                 <div className={`
                     fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] bg-sidebar-bg border-l border-border-custom 
-                    backdrop-blur-xl shadow-2xl transition-transform duration-300 flex flex-col
+                    shadow-2xl transition-transform duration-300 flex flex-col
                     ${activeMapRetailer ? 'translate-x-0' : 'translate-x-full'}
                 `}>
                     <div className="p-6 border-b border-border-custom flex items-center justify-between">
@@ -1261,6 +1781,43 @@ export default function MySuperApp() {
                         </div>
                     )}
                 </div>
+
+                {/* Mobile Bottom Navigation Bar */}
+                <nav className="md:hidden fixed bottom-0 left-0 right-0 z-35 bg-sidebar-bg border-t border-border-custom px-6 py-2 flex items-center justify-around shadow-lg">
+                    <button 
+                        onClick={() => {
+                            setActiveTab('products');
+                            resetFilters();
+                        }}
+                        className={`flex flex-col items-center gap-1 transition ${
+                            activeTab === 'products' ? 'text-indigo-500 font-bold' : 'text-slate-500 hover:text-foreground'
+                        }`}
+                    >
+                        <Home className="w-5 h-5" />
+                        <span className="text-[10px]">Αρχική</span>
+                    </button>
+                    <button 
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="flex flex-col items-center gap-1 text-slate-500 hover:text-foreground transition"
+                    >
+                        <Menu className="w-5 h-5" />
+                        <span className="text-[10px]">Κατηγορίες</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('favorites')}
+                        className={`flex flex-col items-center gap-1 transition relative ${
+                            activeTab === 'favorites' ? 'text-indigo-500 font-bold' : 'text-slate-500 hover:text-foreground'
+                        }`}
+                    >
+                        <ShoppingBasket className="w-5 h-5" />
+                        <span className="text-[10px]">Καλάθι</span>
+                        {activeBasketIds.length > 0 && (
+                            <span className="absolute -top-1 -right-2 bg-emerald-500 text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                {activeBasketIds.length}
+                            </span>
+                        )}
+                    </button>
+                </nav>
 
             </div>
         </div>
