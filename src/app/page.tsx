@@ -824,7 +824,7 @@ export default function MySuperApp() {
                                         </button>
                                         
                                         {hasChildren && isOpen && (
-                                            <div className="pl-11 pr-2 py-1 space-y-1 bg-slate-500/5 rounded-b-xl border-t border-border-custom">
+                                            <div className="pl-11 pr-2 py-1 space-y-1 bg-input-custom rounded-b-xl border-t border-border-custom">
                                                 {cat.children?.map(sub => {
                                                     const isSubActive = selectedSubcategoryId === sub.category_id;
                                                     return (
@@ -942,7 +942,7 @@ export default function MySuperApp() {
                                         <div className="absolute bottom-0 left-0 w-60 h-60 bg-emerald-500/10 rounded-full blur-2xl -ml-20 -mb-20 pointer-events-none" />
                                         
                                         <div className="relative z-10 max-w-2xl">
-                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-[11px] font-semibold mb-4">
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/25 text-white text-[11px] font-semibold mb-4">
                                                 <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
                                                 <span>Έξυπνη Σύγκριση Τιμών</span>
                                             </div>
@@ -1080,7 +1080,7 @@ export default function MySuperApp() {
                                                 className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                                                     !selectedSubcategoryId 
                                                         ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20' 
-                                                        : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-650 dark:text-slate-300'
+                                                        : 'bg-input-custom hover:bg-input-custom text-slate-650 dark:text-slate-300'
                                                 }`}
                                             >
                                                 Όλα ({categories.find(c => c.category_id === selectedCategoryId)?.total_product_count || 0})
@@ -1095,7 +1095,7 @@ export default function MySuperApp() {
                                                     className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                                                         selectedSubcategoryId === sub.category_id
                                                             ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
-                                                            : 'bg-slate-500/5 hover:bg-slate-500/10 text-slate-650 dark:text-slate-300'
+                                                            : 'bg-input-custom hover:bg-input-custom text-slate-650 dark:text-slate-300'
                                                     }`}
                                                 >
                                                     {sub.name} ({sub.total_product_count || 0})
@@ -1152,12 +1152,12 @@ export default function MySuperApp() {
 
                                                                 <button 
                                                                     onClick={(e) => toggleFavorite(e, prod)}
-                                                                    className={`absolute top-3 right-3 p-2 rounded-xl transition ${isFav ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-500/10 text-slate-400 hover:text-rose-500'}`}
+                                                                    className={`absolute top-3 right-3 p-2 rounded-xl transition ${isFav ? 'bg-rose-500/10 text-rose-500' : 'bg-input-custom text-slate-400 hover:text-rose-500'}`}
                                                                 >
                                                                     <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
                                                                 </button>
 
-                                                                <div className="p-4 flex items-center justify-center bg-slate-500/5 h-44">
+                                                                <div className="p-4 flex items-center justify-center bg-input-custom h-44">
                                                                     <img 
                                                                         src={prod.image_url} 
                                                                         alt={prod.name}
@@ -1284,7 +1284,7 @@ export default function MySuperApp() {
                                                         </button>
                                                         <button 
                                                             onClick={deselectAllBasketItems}
-                                                            className="px-3 py-1.5 text-xs font-semibold bg-slate-500/10 text-slate-650 dark:text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 rounded-xl transition"
+                                                            className="px-3 py-1.5 text-xs font-semibold bg-input-custom text-slate-650 dark:text-slate-400 border border-slate-500/20 hover:bg-input-custom rounded-xl transition"
                                                         >
                                                             Απεπιλογή Όλων
                                                         </button>
@@ -1304,7 +1304,7 @@ export default function MySuperApp() {
                                                                     relative p-4 rounded-xl border transition cursor-pointer flex items-center gap-3 select-none
                                                                     ${isSelected 
                                                                         ? 'bg-indigo-500/5 border-indigo-500/45 dark:border-indigo-500/30 shadow-sm' 
-                                                                        : 'bg-slate-500/5 border-transparent opacity-60 hover:opacity-100'}
+                                                                        : 'bg-input-custom border-transparent opacity-60 hover:opacity-100'}
                                                                 `}
                                                             >
                                                                 <div className="flex items-center justify-center bg-white rounded p-1 w-10 h-10 border border-border-custom">
@@ -1348,7 +1348,7 @@ export default function MySuperApp() {
                                         ) : (
                                             /* Active Shopping Basket Sub-Tab */
                                             activeBasketProducts.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center py-16 text-center bg-slate-500/5 rounded-2xl border border-dashed border-border-custom p-6 max-w-md mx-auto my-12">
+                                                <div className="flex flex-col items-center justify-center py-16 text-center bg-input-custom rounded-2xl border border-dashed border-border-custom p-6 max-w-md mx-auto my-12">
                                                     <ShoppingBag className="w-12 h-12 text-indigo-500 mb-3 animate-pulse" />
                                                     <div className="text-sm font-bold text-slate-800 dark:text-slate-200">Το Καλάθι σας είναι άδειο</div>
                                                     <p className="text-xs text-slate-400 mt-1 max-w-[280px] mb-4">Επιλέξτε προϊόντα από τη λίστα Pantry για να ενεργοποιήσετε τους αλγόριθμους σύγκρισης και βελτιστοποίησης τιμών.</p>
@@ -1374,7 +1374,7 @@ export default function MySuperApp() {
                                                             <div className="flex gap-2.5">
                                                                 <button 
                                                                     onClick={deselectAllBasketItems}
-                                                                    className="px-3 py-1.5 text-xs font-semibold bg-slate-500/10 text-slate-650 dark:text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 rounded-xl transition"
+                                                                    className="px-3 py-1.5 text-xs font-semibold bg-input-custom text-slate-650 dark:text-slate-400 border border-slate-500/20 hover:bg-input-custom rounded-xl transition"
                                                                 >
                                                                     Απεπιλογή Όλων
                                                                 </button>
@@ -1462,7 +1462,7 @@ export default function MySuperApp() {
                                                                     {activeBasketProducts.map(prod => {
                                                                         const cheapest = getCheapestRetailer(prod);
                                                                         return (
-                                                                            <tr key={prod.id} className="border-b border-border-custom/50 hover:bg-slate-500/5 transition">
+                                                                            <tr key={prod.id} className="border-b border-border-custom/50 hover:bg-input-custom transition">
                                                                                 <td className="py-3 px-4 flex items-center gap-3 min-w-[280px]">
                                                                                     <img src={prod.image_url} alt="" className="w-10 h-10 object-contain rounded bg-white" onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }} />
                                                                                     <div>
@@ -1503,7 +1503,7 @@ export default function MySuperApp() {
                                                             
                                                             <div className="space-y-4 flex-1">
                                                                 {singleStoreResults.length === 0 ? (
-                                                                    <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-500/5 rounded-xl p-4 border border-border-custom">
+                                                                    <div className="flex flex-col items-center justify-center py-8 text-center bg-input-custom rounded-xl p-4 border border-border-custom">
                                                                         <Info className="w-8 h-8 text-amber-500 mb-2" />
                                                                         <div className="text-xs font-bold text-slate-600 dark:text-slate-300">Κανένα κατάστημα δεν έχει όλα τα προϊόντα</div>
                                                                         <p className="text-[10px] text-slate-400 mt-1 max-w-[240px]">Κανένα μεμονωμένο σούπερ μάρκετ δεν διαθέτει το 100% των επιλογών σας. Δείτε την πρόταση Split-Trip παρακάτω για αγορά από τα φθηνότερα.</p>
@@ -1521,7 +1521,7 @@ export default function MySuperApp() {
                                                                                     flex items-center justify-between p-4 rounded-xl border transition cursor-pointer
                                                                                     ${isWinner 
                                                                                         ? 'bg-emerald-500/5 border-emerald-500/30 dark:border-emerald-500/20 shadow-emerald-500/5 shadow-md hover:border-emerald-500/50' 
-                                                                                        : 'bg-slate-500/5 border-transparent hover:border-border-custom'}
+                                                                                        : 'bg-input-custom border-transparent hover:border-border-custom'}
                                                                                 `}
                                                                                 title="Κάντε κλικ για προβολή στο χάρτη"
                                                                             >
@@ -1569,13 +1569,13 @@ export default function MySuperApp() {
                                                                     const meta = RETAILER_META[group.retailerId] || { name: group.retailerId };
                                                                     return (
                                                                         <div key={group.retailerId} className="border border-border-custom rounded-xl overflow-hidden">
-                                                                            <div className="p-3 bg-slate-500/10 flex items-center justify-between border-b border-border-custom">
+                                                                            <div className="p-3 bg-input-custom flex items-center justify-between border-b border-border-custom">
                                                                                 <div className="flex items-center gap-2">
                                                                                     <img className="w-5 h-5 rounded-full object-cover" src={`https://api.posokanei.gov.gr/images/retailer/${group.retailerId}`} alt="" />
                                                                                     <span className="text-xs font-bold">{meta.name}</span>
                                                                                     <button 
                                                                                         onClick={() => setActiveMapRetailer(group.retailerId)}
-                                                                                        className="p-1 hover:bg-slate-500/15 rounded-lg text-indigo-500 hover:text-indigo-600 transition ml-1"
+                                                                                        className="p-1 hover:bg-input-custom rounded-lg text-indigo-500 hover:text-indigo-600 transition ml-1"
                                                                                         title="Προβολή στο χάρτη"
                                                                                     >
                                                                                         <MapPin className="w-3.5 h-3.5" />
@@ -1623,7 +1623,7 @@ export default function MySuperApp() {
                                 </button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                                <div className="h-48 bg-slate-500/5 rounded-2xl flex items-center justify-center p-4">
+                                <div className="h-48 bg-input-custom rounded-2xl flex items-center justify-center p-4">
                                     <img src={selectedProduct.image_url} alt="" className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal" onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80' }} />
                                 </div>
 
@@ -1639,7 +1639,7 @@ export default function MySuperApp() {
                                         {selectedProduct.retailer_prices.map(rp => {
                                             const meta = RETAILER_META[rp.retailer] || { name: rp.retailer };
                                             return (
-                                                <div key={rp.retailer} className="flex justify-between items-center p-3 bg-slate-500/5 rounded-xl border border-transparent">
+                                                <div key={rp.retailer} className="flex justify-between items-center p-3 bg-input-custom rounded-xl border border-transparent">
                                                     <div className="flex items-center gap-2">
                                                         <img className="w-6 h-6 rounded-full object-cover" src={`https://api.posokanei.gov.gr/images/retailer/${rp.retailer}`} alt="" />
                                                         <span className="text-xs font-bold">{meta.name}</span>
@@ -1658,7 +1658,7 @@ export default function MySuperApp() {
 
                                 <div className="space-y-3">
                                     <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ιστορικό Τιμών (2 Μήνες)</div>
-                                    <div className="h-44 bg-slate-500/5 rounded-xl p-3 border border-border-custom">
+                                    <div className="h-44 bg-input-custom rounded-xl p-3 border border-border-custom">
                                         <canvas ref={chartRef}></canvas>
                                     </div>
                                 </div>
@@ -1711,7 +1711,7 @@ export default function MySuperApp() {
                             />
                             <button 
                                 onClick={copyLink}
-                                className="w-full py-2.5 bg-slate-500/10 hover:bg-slate-500/20 text-foreground text-xs font-bold rounded-xl flex items-center justify-center gap-2 border border-border-custom transition"
+                                className="w-full py-2.5 bg-input-custom hover:bg-input-custom text-foreground text-xs font-bold rounded-xl flex items-center justify-center gap-2 border border-border-custom transition"
                             >
                                 <LinkIcon className="w-4 h-4" />
                                 <span>Αντιγραφή Συνδέσμου (Web Link)</span>
@@ -1750,7 +1750,7 @@ export default function MySuperApp() {
                                 </p>
                             </div>
 
-                            <div className="flex-1 w-full rounded-2xl overflow-hidden border border-border-custom bg-slate-500/5 min-h-[320px] relative">
+                            <div className="flex-1 w-full rounded-2xl overflow-hidden border border-border-custom bg-input-custom min-h-[320px] relative">
                                 <iframe 
                                     title="Google Maps Store Locator"
                                     width="100%" 
