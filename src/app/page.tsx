@@ -1212,7 +1212,7 @@ export default function MySuperApp() {
                                                     <RefreshCw className="w-8 h-8 animate-spin text-indigo-500" />
                                                 </div>
                                             ) : (
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                                                     {products.map(prod => {
                                                         const isFav = favorites.some(p => p.id === prod.id);
                                                         const cheapest = getCheapestRetailer(prod);
@@ -1370,7 +1370,7 @@ export default function MySuperApp() {
                                                 </div>
 
                                                 {/* Pantry Selection Grid */}
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mt-6">
                                                     {favorites.map(prod => {
                                                         const isSelected = activeBasketIds.includes(prod.id);
                                                         const cheapest = getCheapestRetailer(prod);
@@ -1460,7 +1460,7 @@ export default function MySuperApp() {
                                                         </div>
 
                                                         {/* Active Basket Selection Grid */}
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mt-6">
                                                             {activeBasketProducts.map(prod => {
                                                                 const cheapest = getCheapestRetailer(prod);
                                                                 return (
