@@ -70,10 +70,12 @@ mysuper-app/
    - Θα περιλαμβάνει σαφείς οδηγίες χρήσης (Βήμα 1: Σύνδεση στο e-shop, Βήμα 2: Προσθήκη προϊόντων ένα-προς-ένα).
 
 2. **Προδιαγραφές Συνδέσμων e-Shop (Search Deep Links)**:
-   - **Σκλαβενίτης**: `https://www.sklavenitis.gr/apotelesmata-anazitisis/?search={barcode}`
-   - **ΑΒ Βασιλόπουλος**: `https://www.ab.gr/search?q={barcode}`
-   - **MyMarket**: `https://eshop.mymarket.gr/anazitisi?q={barcode}`
-   - **Κρητικός**: `https://eshop.kritikos-sm.gr/anazitisi?q={barcode}`
+   - **Σκλαβενίτης**: `https://www.sklavenitis.gr/apotelesmata-anazitisis/?Query={query}` (Χρησιμοποιεί `Query` με κεφαλαίο **Q**, όχι `search`).
+   - **ΑΒ Βασιλόπουλος**: `https://www.ab.gr/search?q={query}`
+   - **MyMarket**: `https://eshop.mymarket.gr/anazitisi?q={query}`
+   - **Κρητικός**: `https://eshop.kritikos-sm.gr/anazitisi?q={query}`
+   - **Μασούτης**: `https://www.masoutis.gr/categories/index/search?text={query}` (Χρησιμοποιεί `text` και συγκεκριμένο path).
+   - **Lidl**: `https://www.lidl.gr/search?q={query}`
 
 3. **Διασύνδεση στο `src/app/page.tsx`**:
    - State για το `isHelperOpen: boolean` και `helperRetailer: string | null`.
@@ -83,6 +85,18 @@ mysuper-app/
 4. **Έλεγχος και Δοκιμή (Validation)**:
    - Δοκιμή ανοίγματος των συνδέσμων και επιβεβαίωση ότι οι e-shop αναζητήσεις λειτουργούν σωστά.
    - Έλεγχος συμβατότητας (TypeScript compilation και Next.js build).
+
+---
+
+### 📌 Session Summary & Status (19 Ιουνίου 2026)
+
+*   **e-Shop Order Helper**: Πλήρως υλοποιημένο και διασυνδεδεμένο με τα Single Store & Split-Trip views.
+*   **Διορθώσεις URL αναζήτησης**:
+    - **Σκλαβενίτης**: Διορθώθηκε η παράμετρος από `?search=` σε `?Query=` για να αποφευχθεί το σφάλμα ελάχιστων χαρακτήρων (3+).
+    - **Μασούτης**: Διορθώθηκε το URL σε `https://www.masoutis.gr/categories/index/search?text=` καθώς η προηγούμενη διεύθυνση δεν επέστρεφε αποτελέσματα.
+*   **Διαχείριση Barcode vs Fallback**:
+    - Το API του PosoKanei (εξέλιξη του e-Katanalotis) **δεν** επιστρέφει το barcode (EAN) κατά την περιήγηση κατηγοριών ή την αναζήτηση κειμένου (επιστρέφει μόνο το UUID).
+    - Για τον λόγο αυτό, αποθηκεύουμε το barcode στο αντικείμενο του προϊόντος κατά τη σάρωση (`handleBarcodeScanSuccess`), και όταν αυτό δεν υπάρχει (π.χ. προσθήκη από κατηγορία), χρησιμοποιούμε ως fallback το συνδυασμό `Brand + Name` με έλεγχο ασφαλείας να μην γίνει αναζήτηση εάν το κείμενο είναι < 3 χαρακτήρες (για αποφυγή σφαλμάτων).
 
 
 
