@@ -1755,10 +1755,23 @@ export default function MySuperApp() {
                     {selectedProduct && (
                         <>
                             <div className="p-6 border-b border-border-custom flex items-center justify-between">
-                                <h3 className="text-base font-bold truncate max-w-[320px]">{selectedProduct.name}</h3>
-                                <button className="p-1 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg" onClick={() => setIsDetailOpen(false)}>
-                                    <X className="w-5 h-5" />
-                                </button>
+                                <h3 className="text-base font-bold truncate max-w-[280px]">{selectedProduct.name}</h3>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={(e) => toggleFavorite(e, selectedProduct)}
+                                        className={`p-2 rounded-xl transition cursor-pointer ${
+                                            favorites.some(p => p.id === selectedProduct.id)
+                                                ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' 
+                                                : 'hover:bg-input-custom text-slate-450 hover:text-slate-650 dark:hover:text-slate-250 border border-transparent'
+                                        }`}
+                                        title={favorites.some(p => p.id === selectedProduct.id) ? 'Αφαίρεση από τα Αγαπημένα' : 'Προσθήκη στα Αγαπημένα'}
+                                    >
+                                        <Heart className={`w-4.5 h-4.5 ${favorites.some(p => p.id === selectedProduct.id) ? 'fill-current' : ''}`} />
+                                    </button>
+                                    <button className="p-2 hover:bg-input-custom text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 rounded-xl transition cursor-pointer" onClick={() => setIsDetailOpen(false)}>
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                                 <div className="h-48 bg-input-custom rounded-2xl flex items-center justify-center p-4">
