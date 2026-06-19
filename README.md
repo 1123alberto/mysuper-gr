@@ -55,7 +55,7 @@ mysuper-app/
 ## 📋 Μελλοντικές Βελτιώσεις (Things to Do)
 
 *   [x] **📷 Scan & Compare (Barcode Scanner)**: Δυνατότητα σάρωσης του γραμμωτού κώδικα (barcode - EAN) των προϊόντων μέσω της κάμερας της κινητής συσκευής (ή με χειροκίνητη πληκτρολόγηση EAN) για αστραπιαία εύρεση και σύγκριση τιμών σε πραγματικό χρόνο.
-*   [ ] **🛒 e-Shop Order Helper (Βοηθός Παραγγελίας e-Shop)**: Δυνατότητα γρήγορης εύρεσης και προσθήκης των προϊόντων του καλαθιού στα επίσημα online e-shops των supermarkets μέσω EAN barcode deep-linking.
+*   [x] **🛒 e-Shop Order Helper (Βοηθός Παραγγελίας e-Shop)**: Δυνατότητα γρήγορης εύρεσης και προσθήκης των προϊόντων του καλαθιού στα επίσημα online e-shops των supermarkets μέσω EAN barcode deep-linking.
 
 ---
 
