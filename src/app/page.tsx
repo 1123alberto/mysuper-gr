@@ -70,6 +70,7 @@ interface Product {
     price_stats: PriceStat;
     retailer_prices: RetailerPrice[];
     history?: { timestamp: string; retailer_prices: RetailerPrice[] }[];
+    barcode?: string;
 }
 
 interface CategoryNode {
@@ -467,7 +468,10 @@ export default function MySuperApp() {
             if (res.ok) {
                 const data = await res.json();
                 if (data) {
-                    const sanitized = sanitizeProduct(data);
+                    const sanitized = {
+                        ...sanitizeProduct(data),
+                        barcode: barcode
+                    };
                     // Update cache
                     setBarcodeCache(prev => ({
                         ...prev,

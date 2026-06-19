@@ -28,6 +28,7 @@ interface Product {
     unit_quantity: number;
     price_stats: PriceStat;
     retailer_prices: RetailerPrice[];
+    barcode?: string;
 }
 
 interface EShopHelperModalProps {
@@ -108,18 +109,26 @@ export default function EShopHelperModal({ isOpen, onClose, products, retailer }
     );
 
     const getSearchUrl = (product: Product) => {
-        const isBarcode = /^\d{8,14}$/.test(product.id);
-        const query = isBarcode ? product.id : `${product.brand} ${product.name}`;
+        const barcodeVal = product.barcode || (/^\d{8,14}$/.test(product.id) ? product.id : '');
+        const query = barcodeVal ? barcodeVal : `${product.brand || ''} ${product.name || ''}`.trim();
+
+        if (query.length < 3) {
+            return info.url; // Fallback to homepage if query is too short (< 3 characters) to avoid retailer search error
+        }
 
         switch (retailer) {
             case 'sklavenitis':
-                return `https://www.sklavenitis.gr/apotelesmata-anazitisis/?search=${encodeURIComponent(query)}`;
+                return `https://www.sklavenitis.gr/apotelesmata-anazitisis/?Query=${encodeURIComponent(query)}`;
             case 'ab_vasilopoulos':
                 return `https://www.ab.gr/search?q=${encodeURIComponent(query)}`;
             case 'mymarket':
                 return `https://eshop.mymarket.gr/anazitisi?q=${encodeURIComponent(query)}`;
             case 'kritikos':
                 return `https://eshop.kritikos-sm.gr/anazitisi?q=${encodeURIComponent(query)}`;
+            case 'masoutis':
+                return `https://eshop.masoutis.gr/search?q=${encodeURIComponent(query)}`;
+            case 'lidl':
+                return `https://www.lidl.gr/search?q=${encodeURIComponent(query)}`;
             default:
                 return info.url; // Fallback to main home page
         }
