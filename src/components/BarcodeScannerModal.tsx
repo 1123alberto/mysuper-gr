@@ -23,7 +23,7 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScanSuccess }: 
     const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
     const scannerId = "barcode-scanner-viewfinder";
 
-    // Styles for scanning laser animation
+    // Styles for scanning laser animation and viewfinder video centering
     const styleBlock = `
         @keyframes scan-laser {
             0% { top: 0%; }
@@ -32,6 +32,12 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScanSuccess }: 
         }
         .animate-scan-laser {
             animation: scan-laser 2.5s linear infinite;
+        }
+        #${scannerId} video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            object-position: center !important;
         }
     `;
 
