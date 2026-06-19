@@ -11,6 +11,7 @@ import Chart from 'chart.js/auto';
 import dynamic from 'next/dynamic';
 
 const BarcodeScannerModal = dynamic(() => import('../components/BarcodeScannerModal'), { ssr: false });
+const EShopHelperModal = dynamic(() => import('../components/EShopHelperModal'), { ssr: false });
 
 // Allowed 6 supermarkets
 const ALLOWED_RETAILERS = ['lidl', 'masoutis', 'ab_vasilopoulos', 'mymarket', 'sklavenitis', 'kritikos'];
@@ -93,6 +94,8 @@ export default function MySuperApp() {
     const [favoritesSubTab, setFavoritesSubTab] = useState<'pantry' | 'basket'>('pantry');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [barcodeCache, setBarcodeCache] = useState<Record<string, Product>>({});
+    const [isHelperOpen, setIsHelperOpen] = useState(false);
+    const [helperRetailer, setHelperRetailer] = useState<string>('');
 
     const activeBasketProducts = useMemo(() => {
         return favorites.filter(p => activeBasketIds.includes(p.id));
@@ -1686,8 +1689,22 @@ export default function MySuperApp() {
                                                                                         <div className="text-[10px] text-slate-400 font-semibold">{res.itemsCount}/{res.totalItems} προϊόντα • 100% διαθεσιμότητα</div>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="text-right">
-                                                                                    <div className={`text-base font-extrabold ${isWinner ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-350'}`}>€{res.totalCost.toFixed(2)}</div>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className="text-right">
+                                                                                        <div className={`text-base font-extrabold ${isWinner ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-350'}`}>€{res.totalCost.toFixed(2)}</div>
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            setHelperRetailer(res.retailerId);
+                                                                                            setIsHelperOpen(true);
+                                                                                        }}
+                                                                                        className="p-2 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white rounded-xl transition duration-200 cursor-pointer flex items-center gap-1.5 text-[10px] font-bold"
+                                                                                        title="Online Παραγγελία"
+                                                                                    >
+                                                                                        <ShoppingBag className="w-3.5 h-3.5" />
+                                                                                        <span className="hidden sm:inline">Παραγγελία</span>
+                                                                                    </button>
                                                                                 </div>
                                                                             </div>
                                                                         );
@@ -1732,7 +1749,19 @@ export default function MySuperApp() {
                                                                                         <MapPin className="w-3.5 h-3.5" />
                                                                                     </button>
                                                                                 </div>
-                                                                                <strong className="text-xs text-emerald-500 font-extrabold">€{group.total.toFixed(2)}</strong>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <strong className="text-xs text-emerald-500 font-extrabold">€{group.total.toFixed(2)}</strong>
+                                                                                    <button 
+                                                                                        onClick={() => {
+                                                                                            setHelperRetailer(group.retailerId);
+                                                                                            setIsHelperOpen(true);
+                                                                                        }}
+                                                                                        className="p-1.5 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white rounded-lg transition ml-1 cursor-pointer"
+                                                                                        title="Βοηθός e-Shop"
+                                                                                    >
+                                                                                        <ShoppingBag className="w-3.5 h-3.5" />
+                                                                                    </button>
+                                                                                </div>
                                                                             </div>
                                                                             <div className="p-2 space-y-1 bg-white/20 dark:bg-slate-950/20">
                                                                                 {group.items.map((item, idx) => (
@@ -1995,6 +2024,14 @@ export default function MySuperApp() {
                     isOpen={isScannerOpen} 
                     onClose={() => setIsScannerOpen(false)} 
                     onScanSuccess={handleBarcodeScanSuccess} 
+                />
+
+                {/* e-Shop Order Helper Modal */}
+                <EShopHelperModal 
+                    isOpen={isHelperOpen} 
+                    onClose={() => setIsHelperOpen(false)} 
+                    products={activeBasketProducts} 
+                    retailer={helperRetailer} 
                 />
 
             </div>
