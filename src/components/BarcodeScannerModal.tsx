@@ -92,10 +92,8 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScanSuccess }: 
             formatsToSupport: [
                 Html5QrcodeSupportedFormats.EAN_13,
                 Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.CODE_128,
                 Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E,
-                Html5QrcodeSupportedFormats.QR_CODE
+                Html5QrcodeSupportedFormats.UPC_E
             ],
             verbose: false,
             experimentalFeatures: {
@@ -115,6 +113,11 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScanSuccess }: 
                         const boxWidth = Math.min(width * 0.85, 320);
                         const boxHeight = Math.min(height * 0.4, 160);
                         return { x: (width - boxWidth) / 2, y: (height - boxHeight) / 2, width: boxWidth, height: boxHeight };
+                    },
+                    videoConstraints: {
+                        width: { min: 640, ideal: 1280, max: 1920 },
+                        height: { min: 480, ideal: 720, max: 1080 },
+                        aspectRatio: 1.7777777778
                     }
                 },
                 (decodedText) => {
