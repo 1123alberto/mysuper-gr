@@ -1067,7 +1067,7 @@ export default function MySuperApp() {
                                     value={searchTerm}
                                     onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                                     placeholder="Αναζήτηση προϊόντων (π.χ. γάλα, φέτα, ρύζι)..."
-                                    className="w-full pl-9 pr-10 py-2 text-sm bg-input-custom border border-transparent focus:border-indigo-500 focus:bg-background rounded-xl outline-none transition text-foreground"
+                                    className="w-full pl-9 pr-10 py-2 text-base md:text-sm bg-input-custom border border-transparent focus:border-indigo-500 focus:bg-background rounded-xl outline-none transition text-foreground"
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                                     {searchTerm && (
