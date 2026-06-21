@@ -1,10 +1,11 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { 
     Search, Moon, Sun, Heart, Trash2, Share2, Copy, Link as LinkIcon, 
-    X, Sparkles, ShoppingBag, TrendingUp, ChevronRight, ChevronDown, ChevronLeft, LayoutGrid,
+    X, Sparkles, ShoppingBag, ChevronRight, ChevronDown, ChevronLeft, LayoutGrid,
     Store, Percent, Trophy, Info, PiggyBank, RefreshCw, Menu, ShoppingBasket,
     MapPin, Home, Camera
 } from 'lucide-react';
@@ -82,14 +83,69 @@ interface CategoryNode {
     children?: CategoryNode[];
 }
 
+interface RawProduct {
+    id: string;
+    name: string;
+    brand: string;
+    image_url: string;
+    category: string;
+    unit: string;
+    unit_quantity: number;
+    price_stats?: Partial<PriceStat> | null;
+    retailer_prices?: RetailerPrice[] | null;
+    history?: { timestamp: string; retailer_prices: RetailerPrice[] }[];
+    barcode?: string;
+}
+
+interface Stats {
+    timestamp: string;
+    total_products: number;
+    products_on_discount: number;
+}
+
+// Sanitize products to only keep allowed retailers
+const sanitizeProduct = (prod: RawProduct): Product => {
+    if (!prod) return prod as unknown as Product;
+    const filteredPrices = (prod.retailer_prices || []).filter((rp) => ALLOWED_RETAILERS.includes(rp.retailer));
+    
+    let minPrice = Infinity;
+    let maxPrice = -Infinity;
+    let sum = 0;
+    
+    filteredPrices.forEach((rp) => {
+        if (rp.price < minPrice) minPrice = rp.price;
+        if (rp.price > maxPrice) maxPrice = rp.price;
+        sum += rp.price;
+    });
+    
+    const count = filteredPrices.length;
+    
+    return {
+        ...prod,
+        image_url: prod.image_url || '',
+        retailer_prices: filteredPrices,
+        price_stats: count > 0 ? {
+            min_price: minPrice,
+            max_price: maxPrice,
+            avg_price: sum / count,
+            retailer_count: count
+        } : {
+            min_price: prod.price_stats?.min_price || 0,
+            max_price: prod.price_stats?.max_price || 0,
+            avg_price: prod.price_stats?.avg_price || 0,
+            retailer_count: 0
+        }
+    } as Product;
+};
+
 export default function MySuperApp() {
     // Theme state
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const [mounted, setMounted] = useState(false);
 
     // App state
-    const [retailers, setRetailers] = useState<any[]>([]);
     const [categories, setCategories] = useState<CategoryNode[]>([]);
-    const [stats, setStats] = useState<any>(null);
+    const [stats, setStats] = useState<Stats | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [favorites, setFavorites] = useState<Product[]>([]);
     const [activeBasketIds, setActiveBasketIds] = useState<string[]>([]);
@@ -157,6 +213,8 @@ export default function MySuperApp() {
         return currentCategoryNode && currentCategoryNode.children && currentCategoryNode.children.length > 0;
     }, [currentCategoryNode]);
 
+    const isHomeScreen = !searchTerm && categoryPath.length === 0;
+
     const shouldShowSubcategoryGrid = !searchTerm && hasSubcategories && !showAllProductsInCategory;
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -191,46 +249,11 @@ export default function MySuperApp() {
 
     // Chart ref
     const chartRef = useRef<HTMLCanvasElement>(null);
-    const chartInstance = useRef<any>(null);
+    const chartInstance = useRef<Chart | null>(null);
 
-    // Sanitize products to only keep allowed retailers
-    const sanitizeProduct = (prod: any): Product => {
-        if (!prod) return prod;
-        const filteredPrices = (prod.retailer_prices || []).filter((rp: any) => ALLOWED_RETAILERS.includes(rp.retailer));
-        
-        let minPrice = Infinity;
-        let maxPrice = -Infinity;
-        let sum = 0;
-        
-        filteredPrices.forEach((rp: any) => {
-            if (rp.price < minPrice) minPrice = rp.price;
-            if (rp.price > maxPrice) maxPrice = rp.price;
-            sum += rp.price;
-        });
-        
-        const count = filteredPrices.length;
-        
-        return {
-            ...prod,
-            retailer_prices: filteredPrices,
-            price_stats: count > 0 ? {
-                min_price: minPrice,
-                max_price: maxPrice,
-                avg_price: sum / count,
-                retailer_count: count
-            } : {
-                min_price: prod.price_stats?.min_price || 0,
-                max_price: prod.price_stats?.max_price || 0,
-                avg_price: prod.price_stats?.avg_price || 0,
-                retailer_count: 0
-            }
-        };
-    };
-
-    // Initialize Theme
+    // Initialize Theme and LocalStorage state
     useEffect(() => {
         const storedTheme = localStorage.getItem('posokanei_theme') || 'light';
-        setTheme(storedTheme as 'light' | 'dark');
         if (storedTheme === 'dark') {
             document.documentElement.classList.add('dark');
         } else {
@@ -243,26 +266,33 @@ export default function MySuperApp() {
         if (storedFavs) {
             try {
                 loadedFavs = JSON.parse(storedFavs).map(sanitizeProduct);
-                setFavorites(loadedFavs);
             } catch (e) {
                 console.error(e);
             }
         }
 
         // Initialize Active Basket
+        let loadedBasketIds: string[] = [];
         const storedBasket = localStorage.getItem('posokanei_active_basket');
         if (storedBasket) {
             try {
-                setActiveBasketIds(JSON.parse(storedBasket));
+                loadedBasketIds = JSON.parse(storedBasket);
             } catch (e) {
                 console.error(e);
             }
         } else {
             // Default to selecting all favorites if no stored basket exists
-            const allIds = loadedFavs.map(p => p.id);
-            setActiveBasketIds(allIds);
-            localStorage.setItem('posokanei_active_basket', JSON.stringify(allIds));
+            loadedBasketIds = loadedFavs.map(p => p.id);
+            localStorage.setItem('posokanei_active_basket', JSON.stringify(loadedBasketIds));
         }
+
+        // Defer state updates to avoid synchronous setState warnings in effect
+        setTimeout(() => {
+            setTheme(storedTheme as 'light' | 'dark');
+            setFavorites(loadedFavs);
+            setActiveBasketIds(loadedBasketIds);
+            setMounted(true);
+        }, 0);
     }, []);
 
     // Toggle Theme
@@ -307,13 +337,15 @@ export default function MySuperApp() {
     useEffect(() => {
         // If we are on home screen or showing the subcategory grid, don't fetch products
         if (isHomeScreen || (hasSubcategories && !showAllProductsInCategory && !searchTerm)) {
-            setProducts([]);
+            setTimeout(() => {
+                setProducts([]);
+            }, 0);
             return;
         }
 
         const fetchProductsData = async () => {
             setLoadingProducts(true);
-            const payload: any = {
+            const payload: Record<string, unknown> = {
                 page: currentPage,
                 page_size: 24
             };
@@ -360,7 +392,7 @@ export default function MySuperApp() {
         }, searchTerm ? 400 : 0);
 
         return () => clearTimeout(delayTimer);
-    }, [searchTerm, selectedCategoryId, selectedSubcategoryId, currentPage, sortBy]);
+    }, [searchTerm, selectedCategoryId, selectedSubcategoryId, currentPage, sortBy, hasSubcategories, isHomeScreen, showAllProductsInCategory]);
 
     // Handle incoming hash shares
     useEffect(() => {
@@ -499,7 +531,7 @@ export default function MySuperApp() {
         }
     };
 
-    const isHomeScreen = !searchTerm && categoryPath.length === 0;
+
 
     const handleCategoryClick = (catId: string) => {
         setCategoryPath([catId]);
@@ -549,7 +581,7 @@ export default function MySuperApp() {
     const getCheapestRetailer = (product: Product) => {
         if (!product.retailer_prices || !product.retailer_prices.length) return null;
         let cheapest = product.retailer_prices[0];
-        for (let p of product.retailer_prices) {
+        for (const p of product.retailer_prices) {
             if (p.price < cheapest.price) {
                 cheapest = p;
             }
@@ -738,13 +770,10 @@ export default function MySuperApp() {
     }, [activeBasketProducts]);
 
     const webShareLink = useMemo(() => {
-        if (activeBasketProducts.length === 0) return '';
+        if (!mounted || activeBasketProducts.length === 0) return '';
         const ids = activeBasketProducts.map(p => p.id).join(',');
-        if (typeof window !== 'undefined') {
-            return `${window.location.origin}${window.location.pathname}#share=${ids}`;
-        }
-        return `#share=${ids}`;
-    }, [activeBasketProducts]);
+        return `${window.location.origin}${window.location.pathname}#share=${ids}`;
+    }, [activeBasketProducts, mounted]);
 
     // Copy handlers
     const copyText = () => {
@@ -888,7 +917,7 @@ export default function MySuperApp() {
                                         >
                                             <div className="flex items-center gap-3">
                                                 {cat.image_url ? (
-                                                    <img src={cat.image_url} alt="" className="w-6 h-6 rounded-lg object-cover" onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }} />
+                                                    <img src={cat.image_url} alt="" className="w-6 h-6 rounded-lg object-cover" onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }} />
                                                 ) : (
                                                     <ShoppingBag className="w-5 h-5 text-slate-400" />
                                                 )}
@@ -1309,7 +1338,7 @@ export default function MySuperApp() {
                                                                         src={prod.image_url} 
                                                                         alt={prod.name}
                                                                         className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal group-hover:scale-105 transition duration-300"
-                                                                        onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80' }}
+                                                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80' }}
                                                                     />
                                                                 </div>
 
@@ -1336,7 +1365,8 @@ export default function MySuperApp() {
                                                                                 className="w-5 h-5 rounded-full border border-border-custom object-cover" 
                                                                                 src={`https://api.posokanei.gov.gr/images/retailer/${rp.retailer}`} 
                                                                                 title={RETAILER_META[rp.retailer]?.name || rp.retailer}
-                                                                                onError={(e) => { (e.target as any).style.display = 'none' }}
+                                                                                alt=""
+                                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                                                                             />
                                                                         ))}
                                                                     </div>
@@ -1459,7 +1489,7 @@ export default function MySuperApp() {
                                                                         src={prod.image_url} 
                                                                         alt="" 
                                                                         className="max-h-full max-w-full object-contain"
-                                                                        onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }}
+                                                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }}
                                                                     />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
@@ -1543,7 +1573,7 @@ export default function MySuperApp() {
                                                                                 src={prod.image_url} 
                                                                                 alt="" 
                                                                                 className="max-h-full max-w-full object-contain"
-                                                                                onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }}
+                                                                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }}
                                                                             />
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
@@ -1611,7 +1641,7 @@ export default function MySuperApp() {
                                                                         return (
                                                                             <tr key={prod.id} className="border-b border-border-custom/50 hover:bg-input-custom transition">
                                                                                 <td className="py-3 px-4 flex items-center gap-3 min-w-[280px]">
-                                                                                    <img src={prod.image_url} alt="" className="w-10 h-10 object-contain rounded bg-white" onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }} />
+                                                                                    <img src={prod.image_url} alt="" className="w-10 h-10 object-contain rounded bg-white" onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }} />
                                                                                     <div>
                                                                                         <span className="text-[10px] font-semibold text-indigo-500 block">{prod.brand}</span>
                                                                                         <strong className="text-xs font-semibold text-slate-800 dark:text-slate-100">{prod.name}</strong>
@@ -1810,7 +1840,7 @@ export default function MySuperApp() {
                             </div>
                             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                                 <div className="h-48 bg-input-custom rounded-2xl flex items-center justify-center p-4">
-                                    <img src={selectedProduct.image_url} alt="" className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal" onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80' }} />
+                                    <img src={selectedProduct.image_url} alt="" className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal" onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80' }} />
                                 </div>
 
                                 <div>

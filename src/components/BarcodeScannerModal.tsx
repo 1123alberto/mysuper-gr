@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, X, RefreshCw, AlertCircle, Zap, ZapOff, Search } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
@@ -41,6 +41,108 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScanSuccess }: 
         }
     `;
 
+    const stopScanning = useCallback(async () => {
+        if (html5QrCodeRef.current) {
+            try {
+                if (html5QrCodeRef.current.isScanning) {
+                    await html5QrCodeRef.current.stop();
+                }
+            } catch (err) {
+                console.error("Error stopping html5QrCode:", err);
+            } finally {
+                html5QrCodeRef.current = null;
+                setIsScanning(false);
+                setTorchOn(false);
+                setHasTorch(false);
+            }
+        }
+    }, []);
+
+    const startScanning = useCallback(async (cameraId: string) => {
+        if (html5QrCodeRef.current?.isScanning) {
+            await stopScanning();
+        }
+
+        setErrorMsg('');
+        const html5QrCode = new Html5Qrcode(scannerId, {
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E
+            ],
+            verbose: false
+        });
+        html5QrCodeRef.current = html5QrCode;
+
+        try {
+            setIsScanning(true);
+            await html5QrCode.start(
+                cameraId,
+                {
+                    fps: 24,
+                    qrbox: (width: number) => {
+                        const boxWidth = Math.min(width * 0.85, 320);
+                        const boxHeight = boxWidth * 0.5; // aspect ratio 2:1 for barcodes
+                        return {
+                            width: Math.round(boxWidth),
+                            height: Math.round(boxHeight)
+                        };
+                    },
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true
+                    },
+                    useBarCodeDetectorIfSupported: true,
+                    videoConstraints: {
+                        deviceId: { exact: cameraId },
+                        width: { min: 640, ideal: 1280, max: 1920 },
+                        height: { min: 480, ideal: 720, max: 1080 },
+                        aspectRatio: 1.7777777778
+                    }
+                } as unknown as Parameters<Html5Qrcode['start']>[1],
+                (decodedText) => {
+                    // Success callback
+                    if (decodedText) {
+                        // Play a feedback beep sound if possible
+                        try {
+                            const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.type = "sine";
+                            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+                            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 0.1);
+                        } catch (e) {
+                            console.log("Audio beep failed:", e);
+                        }
+                        
+                        onScanSuccess(decodedText.trim());
+                        stopScanning();
+                        onClose();
+                    }
+                },
+                () => {
+                    // Verbose scanning error, safe to ignore during normal viewfinder frame processing
+                }
+            );
+
+            // Check if device supports torch
+            try {
+                const capabilities = html5QrCode.getRunningTrackCapabilities();
+                setHasTorch(!!(capabilities as Record<string, unknown>).torch);
+            } catch {
+                setHasTorch(false);
+            }
+        } catch (err: unknown) {
+            console.error("Error starting camera scanning:", err);
+            setErrorMsg('Αποτυχία έναρξης της κάμερας. Ίσως χρησιμοποιείται από άλλη εφαρμογή.');
+            setIsScanning(false);
+        }
+    }, [onClose, onScanSuccess, stopScanning]);
+
     // Fetch available cameras when modal opens
     useEffect(() => {
         if (!isOpen) return;
@@ -66,7 +168,7 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScanSuccess }: 
                 } else {
                     setErrorMsg('Δεν βρέθηκαν κάμερες στη συσκευή σας.');
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Error listing cameras:", err);
                 setErrorMsg('Δεν δόθηκε άδεια πρόσβασης στην κάμερα. Παρακαλώ επιτρέψτε την πρόσβαση.');
             } finally {
@@ -79,123 +181,24 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScanSuccess }: 
         return () => {
             stopScanning();
         };
-    }, [isOpen]);
+    }, [isOpen, stopScanning]);
 
     // Start scanning when camera is selected
     useEffect(() => {
         if (!isOpen || !selectedCameraId) return;
 
-        startScanning(selectedCameraId);
-    }, [isOpen, selectedCameraId]);
-
-    const startScanning = async (cameraId: string) => {
-        if (html5QrCodeRef.current?.isScanning) {
-            await stopScanning();
-        }
-
-        setErrorMsg('');
-        const html5QrCode = new Html5Qrcode(scannerId, {
-            formatsToSupport: [
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E
-            ],
-            verbose: false
-        });
-        html5QrCodeRef.current = html5QrCode;
-
-        try {
-            setIsScanning(true);
-            await html5QrCode.start(
-                cameraId,
-                {
-                    fps: 24,
-                    qrbox: (width: number, height: number) => {
-                        const boxWidth = Math.min(width * 0.85, 320);
-                        const boxHeight = boxWidth * 0.5; // aspect ratio 2:1 for barcodes
-                        return {
-                            width: Math.round(boxWidth),
-                            height: Math.round(boxHeight)
-                        };
-                    },
-                    experimentalFeatures: {
-                        useBarCodeDetectorIfSupported: true
-                    },
-                    useBarCodeDetectorIfSupported: true,
-                    videoConstraints: {
-                        deviceId: { exact: cameraId },
-                        width: { min: 640, ideal: 1280, max: 1920 },
-                        height: { min: 480, ideal: 720, max: 1080 },
-                        aspectRatio: 1.7777777778
-                    }
-                } as any,
-                (decodedText) => {
-                    // Success callback
-                    if (decodedText) {
-                        // Play a feedback beep sound if possible
-                        try {
-                            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-                            const osc = audioCtx.createOscillator();
-                            const gain = audioCtx.createGain();
-                            osc.connect(gain);
-                            gain.connect(audioCtx.destination);
-                            osc.type = "sine";
-                            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
-                            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                            osc.start();
-                            osc.stop(audioCtx.currentTime + 0.1);
-                        } catch (e) {
-                            console.log("Audio beep failed:", e);
-                        }
-                        
-                        onScanSuccess(decodedText.trim());
-                        stopScanning();
-                        onClose();
-                    }
-                },
-                (errorMessage) => {
-                    // Verbose scanning error, safe to ignore during normal viewfinder frame processing
-                }
-            );
-
-            // Check if device supports torch
-            try {
-                const capabilities = html5QrCode.getRunningTrackCapabilities();
-                setHasTorch(!!(capabilities as any).torch);
-            } catch (e) {
-                setHasTorch(false);
-            }
-        } catch (err: any) {
-            console.error("Error starting camera scanning:", err);
-            setErrorMsg('Αποτυχία έναρξης της κάμερας. Ίσως χρησιμοποιείται από άλλη εφαρμογή.');
-            setIsScanning(false);
-        }
-    };
-
-    const stopScanning = async () => {
-        if (html5QrCodeRef.current) {
-            try {
-                if (html5QrCodeRef.current.isScanning) {
-                    await html5QrCodeRef.current.stop();
-                }
-            } catch (err) {
-                console.error("Error stopping html5QrCode:", err);
-            } finally {
-                html5QrCodeRef.current = null;
-                setIsScanning(false);
-                setTorchOn(false);
-                setHasTorch(false);
-            }
-        }
-    };
+        const timer = setTimeout(() => {
+            startScanning(selectedCameraId);
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [isOpen, selectedCameraId, startScanning]);
 
     const toggleTorch = async () => {
         if (!html5QrCodeRef.current || !hasTorch) return;
         try {
             const nextTorchState = !torchOn;
             await html5QrCodeRef.current.applyVideoConstraints({
-                advanced: [{ torch: nextTorchState } as any]
+                advanced: [{ torch: nextTorchState } as unknown as Record<string, unknown>]
             });
             setTorchOn(nextTorchState);
         } catch (err) {
