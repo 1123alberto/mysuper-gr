@@ -191,6 +191,8 @@ export default function MySuperApp() {
     // Chart ref
     const chartRef = useRef<HTMLCanvasElement>(null);
     const chartInstance = useRef<any>(null);
+    const headerSearchInputRef = useRef<HTMLInputElement>(null);
+    const wasHeroSearchFocused = useRef(false);
 
     // Sanitize products to only keep allowed retailers
     const sanitizeProduct = (prod: any): Product => {
@@ -301,6 +303,16 @@ export default function MySuperApp() {
         };
         fetchMetadata();
     }, []);
+
+    // Focus header search input when transitioning from Hero search input
+    useEffect(() => {
+        if (searchTerm && wasHeroSearchFocused.current && headerSearchInputRef.current) {
+            headerSearchInputRef.current.focus();
+            const length = headerSearchInputRef.current.value.length;
+            headerSearchInputRef.current.setSelectionRange(length, length);
+            wasHeroSearchFocused.current = false;
+        }
+    }, [searchTerm]);
 
     // Fetch Products when filters change
     useEffect(() => {
@@ -950,6 +962,7 @@ export default function MySuperApp() {
                             <div className="relative flex-1 max-w-md">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input 
+                                    ref={headerSearchInputRef}
                                     type="text" 
                                     value={searchTerm}
                                     onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
@@ -1042,7 +1055,12 @@ export default function MySuperApp() {
                                                 <input 
                                                     type="text" 
                                                     value={searchTerm}
-                                                    onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                                    onChange={(e) => { 
+                                                        wasHeroSearchFocused.current = true;
+                                                        setSearchTerm(e.target.value); 
+                                                        setCurrentPage(1); 
+                                                    }}
+                                                    onFocus={() => { wasHeroSearchFocused.current = true; }}
                                                     placeholder="Αναζητήστε προϊόντα (π.χ. γάλα, ελαιόλαδο, φέτα)..."
                                                     className="w-full pl-11 pr-20 py-3.5 text-sm bg-white text-slate-800 placeholder-slate-450 rounded-2xl outline-none border-none shadow-inner transition"
                                                 />
