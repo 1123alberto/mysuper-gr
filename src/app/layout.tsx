@@ -17,6 +17,14 @@ export const metadata: Metadata = {
   title: "MySuper.gr | Σύγκριση Τιμών Σούπερ Μάρκετ",
   description: "Βρείτε τις καλύτερες τιμές στα ελληνικά σούπερ μάρκετ. Υπολογίστε το φθηνότερο καλάθι αγορών (Single Store Run) ή βελτιστοποιήστε τις αγορές σας σε πολλά καταστήματα (Split-Trip).",
   keywords: "supermarket, prices, greece, MySuper.gr, σούπερ μάρκετ, τιμές, καλάθι, σύγκριση",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MySuper.gr",
+  },
+  icons: {
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
