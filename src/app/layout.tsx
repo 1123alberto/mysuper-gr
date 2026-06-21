@@ -46,6 +46,19 @@ export default function RootLayout({
             __html: "try{if(localStorage.getItem('posokanei_theme')==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(_){}"
           }}
         />
+        <Script
+          id="sw-register"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
