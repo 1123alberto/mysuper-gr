@@ -1587,31 +1587,31 @@ export default function KallathakiApp() {
                                                                         onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=40&q=80' }}
                                                                     />
                                                                 </div>
-                                                                <div className="flex-1 min-w-0">
+                                                                <div className="flex-1 min-w-0 pr-6">
                                                                     <span className="text-[9px] font-bold text-indigo-500 block uppercase tracking-wider truncate">{prod.brand || 'Γενικό'}</span>
                                                                     <strong className="text-xs font-semibold text-slate-800 dark:text-slate-100 block truncate">{prod.name}</strong>
                                                                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
                                                                         {cheapest ? `Από €${cheapest.price.toFixed(2)}` : '-'}
                                                                     </span>
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex items-center shrink-0">
                                                                     <input 
                                                                         type="checkbox" 
                                                                         checked={isSelected}
                                                                         readOnly
                                                                         className="w-4 h-4 rounded text-indigo-500 border-slate-300 focus:ring-indigo-500 pointer-events-none"
                                                                     />
-                                                                    <button 
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            toggleFavorite(e, prod);
-                                                                        }}
-                                                                        className="p-1 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 rounded transition"
-                                                                        title="Αφαίρεση από Pantry"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                    </button>
                                                                 </div>
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleFavorite(e, prod);
+                                                                    }}
+                                                                    className="absolute top-1.5 right-1.5 p-1 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 rounded transition"
+                                                                    title="Αφαίρεση από Pantry"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
                                                             </div>
                                                         );
                                                     })}
