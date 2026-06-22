@@ -1579,7 +1579,15 @@ export default function KallathakiApp() {
                                                                         : 'bg-input-custom border-transparent opacity-60 hover:opacity-100'}
                                                                 `}
                                                             >
-                                                                <div className="flex items-center justify-center bg-white rounded p-1 w-10 h-10 border border-border-custom">
+                                                                <div className="flex items-center shrink-0">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={isSelected}
+                                                                        readOnly
+                                                                        className="w-4 h-4 rounded text-indigo-500 border-slate-300 focus:ring-indigo-500 pointer-events-none"
+                                                                    />
+                                                                </div>
+                                                                <div className="flex items-center justify-center bg-white rounded p-1 w-10 h-10 border border-border-custom shrink-0">
                                                                     <img 
                                                                         src={prod.image_url} 
                                                                         alt="" 
@@ -1589,29 +1597,21 @@ export default function KallathakiApp() {
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <span className="text-[9px] font-bold text-indigo-500 block uppercase tracking-wider truncate">{prod.brand || 'Γενικό'}</span>
-                                                                    <strong className="text-xs font-semibold text-slate-800 dark:text-slate-100 block truncate">{prod.name}</strong>
+                                                                    <strong className="text-xs font-semibold text-slate-800 dark:text-slate-100 block line-clamp-2 leading-snug">{prod.name}</strong>
                                                                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
                                                                         {cheapest ? `Από €${cheapest.price.toFixed(2)}` : '-'}
                                                                     </span>
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <input 
-                                                                        type="checkbox" 
-                                                                        checked={isSelected}
-                                                                        readOnly
-                                                                        className="w-4 h-4 rounded text-indigo-500 border-slate-300 focus:ring-indigo-500 pointer-events-none"
-                                                                    />
-                                                                    <button 
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            toggleFavorite(e, prod);
-                                                                        }}
-                                                                        className="p-1 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 rounded transition"
-                                                                        title="Αφαίρεση από Pantry"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                    </button>
-                                                                </div>
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleFavorite(e, prod);
+                                                                    }}
+                                                                    className="p-1 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 rounded transition shrink-0"
+                                                                    title="Αφαίρεση από Pantry"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
                                                             </div>
                                                         );
                                                     })}
