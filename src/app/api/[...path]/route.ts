@@ -90,6 +90,7 @@ export async function POST(
 
   try {
     const body = await req.json();
+    console.log(`[Proxy POST] Request to URL: ${url} with body:`, JSON.stringify(body));
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -101,10 +102,12 @@ export async function POST(
       },
       body: JSON.stringify(body)
     });
+    console.log(`[Proxy POST] Response status: ${response.status}`);
     if (!response.ok) {
       return NextResponse.json({ error: `Gov API returned ${response.status}` }, { status: response.status });
     }
     const data = await response.json();
+    console.log(`[Proxy POST] Returned products count: ${data.products?.length || 0}, total matching: ${data.total || 0}`);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Proxy POST error", error);

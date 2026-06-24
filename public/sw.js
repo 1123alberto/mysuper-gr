@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kallathaki-cache-v1';
+const CACHE_NAME = 'kallathaki-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/icon-192.png',
@@ -31,6 +31,12 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Bypass service worker for non-GET requests (e.g. POST search requests)
+  // to avoid iOS WebKit bugs with POST request interception.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   // Let the browser handle standard requests, fallback to cache if offline
   event.respondWith(
     fetch(event.request).catch(() => {

@@ -319,6 +319,7 @@ export default function KallathakiApp() {
             document.documentElement.classList.remove('dark');
         }
 
+
         // Initialize Favorites
         let loadedFavs: Product[] = [];
         const storedFavs = localStorage.getItem('posokanei_favorites');
