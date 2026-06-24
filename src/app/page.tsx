@@ -2148,19 +2148,23 @@ export default function KallathakiApp() {
                 </nav>
 
                 {/* Barcode Scanner Modal */}
-                <BarcodeScannerModal 
-                    isOpen={isScannerOpen} 
-                    onClose={() => setIsScannerOpen(false)} 
-                    onScanSuccess={handleBarcodeScanSuccess} 
-                />
+                {isScannerOpen && (
+                    <BarcodeScannerModal 
+                        isOpen={isScannerOpen} 
+                        onClose={() => setIsScannerOpen(false)} 
+                        onScanSuccess={handleBarcodeScanSuccess} 
+                    />
+                )}
 
                 {/* e-Shop Order Helper Modal */}
-                <EShopHelperModal 
-                    isOpen={isHelperOpen} 
-                    onClose={() => setIsHelperOpen(false)} 
-                    products={activeBasketProducts} 
-                    retailer={helperRetailer} 
-                />
+                {isHelperOpen && (
+                    <EShopHelperModal 
+                        isOpen={isHelperOpen} 
+                        onClose={() => setIsHelperOpen(false)} 
+                        products={activeBasketProducts} 
+                        retailer={helperRetailer} 
+                    />
+                )}
 
             </div>
         </div>
