@@ -177,10 +177,15 @@ export default function KallathakiApp() {
     const [barcodeCache, setBarcodeCache] = useState<Record<string, Product>>({});
     const [isHelperOpen, setIsHelperOpen] = useState(false);
     const [helperRetailer, setHelperRetailer] = useState<string>('');
+    const [showOptimizerResults, setShowOptimizerResults] = useState(false);
 
     const activeBasketProducts = useMemo(() => {
         return favorites.filter(p => activeBasketIds.includes(p.id));
     }, [favorites, activeBasketIds]);
+
+    useEffect(() => {
+        setShowOptimizerResults(false);
+    }, [activeBasketIds]);
 
     const toggleBasketItem = (productId: string) => {
         setActiveBasketIds(prev => {
@@ -920,6 +925,119 @@ export default function KallathakiApp() {
             p.retailer_prices.forEach(rp => set.add(rp.retailer));
         });
         return Array.from(set);
+    }, [activeBasketProducts]);
+
+    const basketOptimizer = useMemo(() => {
+        try {
+            const totalItems = activeBasketProducts.length;
+            const retailerIds = ALLOWED_RETAILERS.filter((retailerId) =>
+                activeBasketProducts.some((product) => product.retailer_prices.some((price) => price.retailer === retailerId))
+            );
+
+            const combinations = <T,>(items: T[], size: number): T[][] => {
+                if (size === 1) return items.map((item) => [item]);
+                const result: T[][] = [];
+                items.forEach((item, index) => {
+                    combinations(items.slice(index + 1), size - 1).forEach((tail) => result.push([item, ...tail]));
+                });
+                return result;
+            };
+
+            const buildOption = (stores: string[]) => {
+                const groups: { [key: string]: { retailerId: string; items: { id: string; name: string; price: number }[]; total: number } } = {};
+                const missingItems: Product[] = [];
+                let totalCost = 0;
+
+                activeBasketProducts.forEach((product) => {
+                    const bestPrice = product.retailer_prices
+                        .filter((price) => stores.includes(price.retailer))
+                        .sort((a, b) => a.price - b.price)[0];
+
+                    if (!bestPrice) {
+                        missingItems.push(product);
+                        return;
+                    }
+
+                    if (!groups[bestPrice.retailer]) {
+                        groups[bestPrice.retailer] = { retailerId: bestPrice.retailer, items: [], total: 0 };
+                    }
+
+                    groups[bestPrice.retailer].items.push({ id: product.id, name: product.name, price: bestPrice.price });
+                    groups[bestPrice.retailer].total += bestPrice.price;
+                    totalCost += bestPrice.price;
+                });
+
+                return {
+                    stores,
+                    stops: stores.length,
+                    totalCost,
+                    coveredItems: totalItems - missingItems.length,
+                    totalItems,
+                    missingItems,
+                    groups: Object.values(groups).sort((a, b) => b.total - a.total),
+                    complete: missingItems.length === 0
+                };
+            };
+
+            const options = [1, 2, 3]
+                .flatMap((size) => combinations(retailerIds, size))
+                .map(buildOption)
+                .filter((option) => option.coveredItems > 0)
+                .sort((a, b) => {
+                    if (a.complete !== b.complete) return a.complete ? -1 : 1;
+                    if (b.coveredItems !== a.coveredItems) return b.coveredItems - a.coveredItems;
+                    if (a.totalCost !== b.totalCost) return a.totalCost - b.totalCost;
+                    return a.stops - b.stops;
+                });
+
+            const completeOptions = options.filter((option) => option.complete);
+            const bestByStops = (stops: number) => completeOptions.filter((option) => option.stops === stops).sort((a, b) => a.totalCost - b.totalCost)[0];
+            const convenient = bestByStops(1) || options.filter((option) => option.stops === 1)[0] || options[0];
+            const bestTwo = bestByStops(2);
+            const bestThree = bestByStops(3);
+            const maximumSavings = completeOptions.sort((a, b) => a.totalCost - b.totalCost || a.stops - b.stops)[0] || options[0];
+
+            const hasMeaningfulSaving = (from?: { totalCost: number }, to?: { totalCost: number }) => {
+                if (!from || !to) return false;
+                const saving = from.totalCost - to.totalCost;
+                return saving >= 3 || saving / Math.max(from.totalCost, 1) >= 0.05;
+            };
+
+            let recommended = convenient;
+            if (bestTwo && hasMeaningfulSaving(convenient, bestTwo)) {
+                recommended = bestTwo;
+            }
+            if (bestThree && recommended === bestTwo && hasMeaningfulSaving(bestTwo, bestThree)) {
+                recommended = bestThree;
+            }
+
+            const baseline = [...completeOptions].sort((a, b) => b.totalCost - a.totalCost)[0] || options.sort((a, b) => b.totalCost - a.totalCost)[0];
+            const baselineCost = baseline?.totalCost || 0;
+            const bestPossibleSaving = Math.max(0, baselineCost - (maximumSavings?.totalCost || 0));
+
+            return {
+                options,
+                convenient,
+                recommended,
+                maximumSavings,
+                baselineCost,
+                bestPossibleSaving,
+                hasEnoughData: options.length > 0,
+                missingPriceCount: activeBasketProducts.filter((product) => product.retailer_prices.length === 0).length
+            };
+        } catch (error) {
+            console.error('Basket optimizer calculation failed', error);
+            return {
+                options: [],
+                convenient: undefined,
+                recommended: undefined,
+                maximumSavings: undefined,
+                baselineCost: 0,
+                bestPossibleSaving: 0,
+                hasEnoughData: false,
+                missingPriceCount: activeBasketProducts.length
+            };
+        }
     }, [activeBasketProducts]);
 
     // Single Store Run comparison
@@ -1752,6 +1870,173 @@ export default function KallathakiApp() {
                                                 </div>
                                             ) : (
                                                 <div className="space-y-8">
+                                                    <section className="bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden">
+                                                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                                            <div>
+                                                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-[11px] font-bold mb-4">
+                                                                    <ShoppingBasket className="w-3.5 h-3.5" />
+                                                                    <span>{activeBasketProducts.length} προϊόντα στο καλάθι</span>
+                                                                </div>
+                                                                <h3 className="text-2xl sm:text-3xl font-black tracking-tight">Βελτιστοποίηση Καλαθιού</h3>
+                                                                <p className="text-sm text-white/80 mt-2 max-w-xl">
+                                                                    Βρείτε αν σας συμφέρει μία στάση ή διαμοιρασμός σε 2-3 σούπερ μάρκετ, με καθαρή εικόνα εξοικονόμησης.
+                                                                </p>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 lg:min-w-[420px]">
+                                                                <div className="bg-white/10 border border-white/15 rounded-2xl p-4">
+                                                                    <span className="text-[10px] font-bold text-white/70 uppercase">Εκτίμηση</span>
+                                                                    <strong className="block text-xl font-black mt-1">€{(basketOptimizer.recommended?.totalCost || 0).toFixed(2)}</strong>
+                                                                </div>
+                                                                <div className="bg-white/10 border border-white/15 rounded-2xl p-4">
+                                                                    <span className="text-[10px] font-bold text-white/70 uppercase">Μέγιστο όφελος</span>
+                                                                    <strong className="block text-xl font-black text-emerald-200 mt-1">€{basketOptimizer.bestPossibleSaving.toFixed(2)}</strong>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => setShowOptimizerResults(true)}
+                                                                    className="col-span-2 sm:col-span-1 min-h-16 px-5 py-3 bg-white text-indigo-800 hover:bg-indigo-50 rounded-2xl font-black text-sm shadow-lg transition active:scale-[0.98]"
+                                                                >
+                                                                    Βελτιστοποίηση Καλαθιού
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        {basketOptimizer.missingPriceCount > 0 && (
+                                                            <div className="mt-5 flex items-start gap-2 text-xs text-amber-100 bg-amber-500/15 border border-amber-200/20 rounded-2xl p-3">
+                                                                <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                                                                <span>Δεν υπάρχουν αρκετά δεδομένα τιμών για {basketOptimizer.missingPriceCount} προϊόντα. Η σύγκριση γίνεται με όσα προϊόντα έχουν διαθέσιμες τιμές.</span>
+                                                            </div>
+                                                        )}
+                                                    </section>
+
+                                                    {showOptimizerResults && basketOptimizer.hasEnoughData && (
+                                                        <section className="space-y-5">
+                                                            <div className="bg-card-bg border border-emerald-500/20 rounded-3xl p-6 shadow-sm">
+                                                                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Αποτέλεσμα</span>
+                                                                <h3 className="text-2xl font-black text-slate-850 dark:text-slate-100 mt-1">
+                                                                    Μπορείτε να εξοικονομήσετε έως €{basketOptimizer.bestPossibleSaving.toFixed(2)}
+                                                                </h3>
+                                                                <p className="text-sm text-slate-500 mt-2">
+                                                                    {basketOptimizer.recommended?.stops === 1
+                                                                        ? 'Για λίγα ευρώ παραπάνω, μπορείτε να τα πάρετε όλα από ένα κατάστημα.'
+                                                                        : 'Η προτεινόμενη λύση κρατά καλή ισορροπία ανάμεσα στην οικονομία και την ευκολία.'}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                                                {[
+                                                                    {
+                                                                        key: 'convenient',
+                                                                        title: 'Πιο βολικό',
+                                                                        option: basketOptimizer.convenient,
+                                                                        accent: 'border-slate-200 dark:border-slate-700',
+                                                                        badge: 'Όλα σε μία στάση',
+                                                                        icon: <Store className="w-5 h-5" />
+                                                                    },
+                                                                    {
+                                                                        key: 'recommended',
+                                                                        title: 'Προτεινόμενο',
+                                                                        option: basketOptimizer.recommended,
+                                                                        accent: 'border-emerald-500/50 ring-2 ring-emerald-500/10 shadow-lg',
+                                                                        badge: 'Καλύτερη σχέση οικονομίας και ευκολίας',
+                                                                        icon: <Trophy className="w-5 h-5 text-amber-500 fill-amber-500" />
+                                                                    },
+                                                                    {
+                                                                        key: 'maximum',
+                                                                        title: 'Μέγιστη εξοικονόμηση',
+                                                                        option: basketOptimizer.maximumSavings,
+                                                                        accent: 'border-indigo-500/30',
+                                                                        badge: 'Χαμηλότερο συνολικό κόστος',
+                                                                        icon: <PiggyBank className="w-5 h-5" />
+                                                                    }
+                                                                ].map((card) => {
+                                                                    const option = card.option;
+                                                                    if (!option) return null;
+                                                                    const saving = Math.max(0, basketOptimizer.baselineCost - option.totalCost);
+                                                                    return (
+                                                                        <div key={card.key} className={`bg-card-bg border ${card.accent} rounded-3xl p-5 flex flex-col gap-5`}>
+                                                                            <div className="flex items-start justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                                                                                        {card.icon}
+                                                                                        <h4 className="text-base font-black text-slate-850 dark:text-slate-100">{card.title}</h4>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-slate-500 mt-1">{card.badge}</p>
+                                                                                </div>
+                                                                                <span className="px-2.5 py-1 rounded-full bg-input-custom text-[10px] font-black text-slate-650 dark:text-slate-300">
+                                                                                    {option.stops} {option.stops === 1 ? 'στάση' : 'στάσεις'}
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <div>
+                                                                                <strong className="text-3xl font-black text-emerald-600 dark:text-emerald-400">€{option.totalCost.toFixed(2)}</strong>
+                                                                                <div className="text-sm font-bold text-slate-500 mt-1">Εξοικονόμηση €{saving.toFixed(2)}</div>
+                                                                            </div>
+
+                                                                            <div className="space-y-2">
+                                                                                <div className="flex justify-between text-xs font-semibold text-slate-500">
+                                                                                    <span>Διαθέσιμα προϊόντα</span>
+                                                                                    <span>{option.coveredItems}/{option.totalItems}</span>
+                                                                                </div>
+                                                                                <div className="h-2 rounded-full bg-input-custom overflow-hidden">
+                                                                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.round((option.coveredItems / Math.max(option.totalItems, 1)) * 100)}%` }} />
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="flex flex-wrap gap-2">
+                                                                                {option.stores.map((storeId) => (
+                                                                                    <span key={storeId} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-input-custom text-[10px] font-bold text-slate-650 dark:text-slate-300">
+                                                                                        <img src={retailerLogoUrl(storeId)} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                                                                        {RETAILER_META[storeId]?.name || storeId}
+                                                                                    </span>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+
+                                                            {basketOptimizer.recommended && (
+                                                                <div className="bg-card-bg border border-border-custom rounded-3xl p-6 shadow-sm">
+                                                                    <div className="flex items-center justify-between gap-4 mb-5">
+                                                                        <div>
+                                                                            <h4 className="text-base font-black text-slate-850 dark:text-slate-100">Τι να αγοράσετε από κάθε σούπερ μάρκετ</h4>
+                                                                            <p className="text-xs text-slate-500 mt-1">Ανάλυση για την προτεινόμενη επιλογή.</p>
+                                                                        </div>
+                                                                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">€{basketOptimizer.recommended.totalCost.toFixed(2)}</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                                                        {basketOptimizer.recommended.groups.map((group) => (
+                                                                            <details key={group.retailerId} className="group bg-input-custom rounded-2xl border border-border-custom overflow-hidden" open>
+                                                                                <summary className="list-none cursor-pointer p-4 flex items-center justify-between gap-3">
+                                                                                    <div className="flex items-center gap-3 min-w-0">
+                                                                                        <img src={retailerLogoUrl(group.retailerId)} alt="" className="w-8 h-8 rounded-full object-cover" />
+                                                                                        <div className="min-w-0">
+                                                                                            <div className="text-sm font-black truncate">{RETAILER_META[group.retailerId]?.name || group.retailerId}</div>
+                                                                                            <div className="text-[10px] text-slate-500 font-bold">{group.items.length} προϊόντα</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <strong className="text-sm text-emerald-600 dark:text-emerald-400">€{group.total.toFixed(2)}</strong>
+                                                                                </summary>
+                                                                                <div className="px-4 pb-4 space-y-2">
+                                                                                    {group.items.map((item) => (
+                                                                                        <div key={item.id} className="flex items-center justify-between gap-3 text-xs">
+                                                                                            <span className="truncate text-slate-650 dark:text-slate-300">{item.name}</span>
+                                                                                            <span className="font-bold text-slate-850 dark:text-slate-100">€{item.price.toFixed(2)}</span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </details>
+                                                                        ))}
+                                                                    </div>
+                                                                    {basketOptimizer.recommended.missingItems.length > 0 && (
+                                                                        <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-xs text-amber-700 dark:text-amber-300">
+                                                                            Δεν υπάρχουν τιμές για {basketOptimizer.recommended.missingItems.length} προϊόντα στην προτεινόμενη επιλογή.
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </section>
+                                                    )}
+
                                                     {/* Active Basket Items Quick Toggle/Summary Grid */}
                                                     <div className="bg-card-bg border border-border-custom rounded-2xl p-6 shadow-sm">
                                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
