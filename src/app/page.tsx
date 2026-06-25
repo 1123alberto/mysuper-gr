@@ -14,6 +14,13 @@ import dynamic from 'next/dynamic';
 const BarcodeScannerModal = dynamic(() => import('../components/BarcodeScannerModal'), { ssr: false });
 const EShopHelperModal = dynamic(() => import('../components/EShopHelperModal'), { ssr: false });
 
+const GOV_API_ORIGIN = 'https://api.posokanei.gov.gr';
+const proxyGovAssetUrl = (url?: string) => {
+    if (!url) return '';
+    return url.startsWith(GOV_API_ORIGIN) ? url.replace(GOV_API_ORIGIN, '/api') : url;
+};
+const retailerLogoUrl = (retailerId: string) => `/api/images/retailer/${retailerId}`;
+
 // Allowed 6 supermarkets
 const ALLOWED_RETAILERS = ['lidl', 'masoutis', 'ab_vasilopoulos', 'mymarket', 'sklavenitis', 'kritikos'];
 
@@ -121,7 +128,7 @@ const sanitizeProduct = (prod: RawProduct): Product => {
     
     return {
         ...prod,
-        image_url: prod.image_url || '',
+        image_url: proxyGovAssetUrl(prod.image_url),
         retailer_prices: filteredPrices,
         price_stats: count > 0 ? {
             min_price: minPrice,
@@ -263,6 +270,12 @@ export default function KallathakiApp() {
         return currentNode;
     };
 
+    const sanitizeCategoryTree = (nodes: CategoryNode[]): CategoryNode[] => nodes.map((node) => ({
+        ...node,
+        image_url: proxyGovAssetUrl(node.image_url),
+        children: node.children ? sanitizeCategoryTree(node.children) : undefined
+    }));
+
     const currentCategoryNode = useMemo(() => {
         return getCurrentCategoryNode(categoryPath, categories);
     }, [categoryPath, categories]);
@@ -397,7 +410,7 @@ export default function KallathakiApp() {
                 const catRes = await fetch('/api/meta/categories/tree?include_counts=true&include_hidden=false');
                 if (catRes.ok) {
                     const catData = await catRes.json();
-                    setCategories(catData.tree || []);
+                    setCategories(sanitizeCategoryTree(catData.tree || []));
                 }
             } catch (error) {
                 console.error("Failed to load metadata", error);
@@ -1444,7 +1457,7 @@ export default function KallathakiApp() {
                                                                             <img 
                                                                                 key={rp.retailer}
                                                                                 className="w-5 h-5 rounded-full border border-border-custom object-cover" 
-                                                                                src={`https://api.posokanei.gov.gr/images/retailer/${rp.retailer}`} 
+                                                                                src={retailerLogoUrl(rp.retailer)} 
                                                                                 title={RETAILER_META[rp.retailer]?.name || rp.retailer}
                                                                                 alt=""
                                                                                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
@@ -1736,7 +1749,7 @@ export default function KallathakiApp() {
                                                                         {activeFavRetailers.map(retId => (
                                                                             <th key={retId} className="py-3 px-4 text-center">
                                                                                 <div className="flex flex-col items-center gap-1">
-                                                                                    <img className="w-6 h-6 rounded-full object-cover" src={`https://api.posokanei.gov.gr/images/retailer/${retId}`} alt="" />
+                                                                                    <img className="w-6 h-6 rounded-full object-cover" src={retailerLogoUrl(retId)} alt="" />
                                                                                     <span className="text-[10px] font-semibold text-slate-500">{RETAILER_META[retId]?.name || retId}</span>
                                                                                 </div>
                                                                             </th>
