@@ -5,9 +5,9 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Link from 'next/link';
 import { 
     Search, Moon, Sun, Heart, Trash2, Share2, Copy, Link as LinkIcon, 
-    X, Sparkles, ShoppingBag, ChevronRight, ChevronDown, ChevronLeft, LayoutGrid,
+    X, Sparkles, ShoppingBag, ChevronRight, ChevronLeft, LayoutGrid,
     Store, Percent, Trophy, Info, PiggyBank, RefreshCw, Menu, ShoppingBasket,
-    MapPin, Home, Camera, Bell, ShieldCheck, Clock3, UserCircle
+    MapPin, Camera, Bell, ShieldCheck, Clock3, UserCircle
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -68,15 +68,6 @@ const RETAILER_SEARCH_NAMES: { [key: string]: string } = {
     'masoutis': 'Μασούτης',
     'mymarket': 'My Market',
     'kritikos': 'Κρητικός'
-};
-
-const CATEGORY_META: { [key: string]: { emoji: string; gradient: string } } = {
-    'fb7311d1172f411dba075194a4120689': { emoji: '🍏', gradient: 'from-emerald-500/10 to-teal-500/10 hover:border-emerald-500/30 text-emerald-600 dark:text-emerald-400' },
-    '7f677200338b447cb4d469622588b749': { emoji: '🥤', gradient: 'from-amber-500/10 to-orange-500/10 hover:border-amber-500/30 text-amber-600 dark:text-amber-400' },
-    '648a987abf254feb8cf62a10ea1eb117': { emoji: '🧼', gradient: 'from-blue-500/10 to-indigo-500/10 hover:border-blue-500/30 text-blue-600 dark:text-blue-400' },
-    'b2a17c2ad4235ea8574d602763988be6': { emoji: '🧴', gradient: 'from-pink-500/10 to-rose-500/10 hover:border-pink-500/30 text-pink-600 dark:text-pink-400' },
-    'cFsywHNrftQ6yeittltcSFQ4qbM14Q3F': { emoji: '🍼', gradient: 'from-purple-500/10 to-violet-500/10 hover:border-purple-500/30 text-purple-600 dark:text-purple-400' },
-    'b2a17c2ad4235ea8574d602763a39395': { emoji: '🐶', gradient: 'from-orange-500/10 to-yellow-500/10 hover:border-orange-500/30 text-orange-600 dark:text-orange-400' }
 };
 
 interface RetailerPrice {
@@ -367,14 +358,36 @@ export default function KallathakiApp() {
 
     const shouldShowSubcategoryGrid = !searchTerm && hasSubcategories && !showAllProductsInCategory;
 
+    const [isCategoryBrowserOpen, setIsCategoryBrowserOpen] = useState(false);
+    const [categoryBrowserQuery, setCategoryBrowserQuery] = useState('');
+
+    const visibleCategoryGroups = useMemo(() => {
+        const query = categoryBrowserQuery.trim().toLocaleLowerCase('el-GR');
+        if (!query) return categories;
+
+        return categories
+            .map((cat) => {
+                const childMatches = (cat.children || []).filter((child) =>
+                    child.name.toLocaleLowerCase('el-GR').includes(query)
+                );
+                const parentMatches = cat.name.toLocaleLowerCase('el-GR').includes(query);
+
+                if (!parentMatches && childMatches.length === 0) return null;
+
+                return {
+                    ...cat,
+                    children: parentMatches ? cat.children : childMatches
+                };
+            })
+            .filter(Boolean) as CategoryNode[];
+    }, [categories, categoryBrowserQuery]);
+
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const sortBy = 'priceAsc';
     const [activeTab, setActiveTab] = useState<'products' | 'favorites' | 'offers' | 'profile'>('products');
 
     // UI state
-    const [openCategories, setOpenCategories] = useState<{ [key: string]: boolean }>({});
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
@@ -668,7 +681,8 @@ export default function KallathakiApp() {
         setCurrentPage(1);
         setProductError('');
         setActiveTab('products');
-        setIsSidebarOpen(false);
+        setIsCategoryBrowserOpen(false);
+        setCategoryBrowserQuery('');
     };
 
     const handleBarcodeScanSuccess = async (barcode: string) => {
@@ -722,10 +736,8 @@ export default function KallathakiApp() {
         setShowAllProductsInCategory(false);
         setCurrentPage(1);
         setActiveTab('products');
-        setOpenCategories(prev => ({
-            ...prev,
-            [catId]: true
-        }));
+        setIsCategoryBrowserOpen(false);
+        setCategoryBrowserQuery('');
     };
 
     const getBreadcrumbs = () => {
@@ -773,23 +785,14 @@ export default function KallathakiApp() {
         return cheapest;
     };
 
-    // Category tree toggling
-    const toggleCategoryAccordion = (catId: string) => {
-        setOpenCategories(prev => ({
-            ...prev,
-            [catId]: !prev[catId]
-        }));
-        setCategoryPath([catId]);
-        setShowAllProductsInCategory(false);
-        setCurrentPage(1);
-    };
-
     const selectSubcategory = (e: React.MouseEvent, parentId: string, subId: string) => {
         e.stopPropagation();
         setCategoryPath([parentId, subId]);
         setShowAllProductsInCategory(false);
         setCurrentPage(1);
-        setIsSidebarOpen(false);
+        setActiveTab('products');
+        setIsCategoryBrowserOpen(false);
+        setCategoryBrowserQuery('');
     };
 
     // Render price details chart
@@ -1167,7 +1170,8 @@ export default function KallathakiApp() {
         <div className="min-h-screen bg-background text-foreground font-sans transition-colors duration-300">
             <div className="flex h-screen overflow-hidden">
                 
-                {/* Collapsible/Drawer Sidebar */}
+                {/*
+                Collapsible/Drawer Sidebar removed in favor of the category browser overlay.
                 <aside className={`
                     fixed inset-y-0 left-0 z-40 w-80 bg-sidebar-bg border-r border-border-custom 
                     transition-transform duration-300 md:relative md:translate-x-0 flex flex-col
@@ -1272,27 +1276,29 @@ export default function KallathakiApp() {
                         </p>
                     </div>
                 </aside>
+                */}
 
                 {/* Main Content Pane */}
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                     
                     {/* Header bar */}
-                    <header className="p-4 border-b border-border-custom bg-panel-bg flex flex-wrap gap-4 items-center justify-between">
+                    <header className="px-4 py-3 sm:px-6 border-b border-border-custom bg-panel-bg flex flex-wrap gap-3 items-center justify-between">
                         
-                        <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-                            <button className="md:hidden p-2 hover:bg-input-custom rounded-xl" onClick={() => setIsSidebarOpen(true)} aria-label="Άνοιγμα μενού">
+                        <div className="flex items-center gap-3 flex-1 min-w-[260px]">
+                            <button className={`h-10 px-3 rounded-xl border text-xs font-bold transition flex items-center gap-2 shrink-0 ${selectedCategoryId ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-700 dark:text-indigo-300' : 'bg-background border-border-custom hover:bg-input-custom text-slate-700 dark:text-slate-300'}`} onClick={() => setIsCategoryBrowserOpen(true)} aria-label="Άνοιγμα κατηγοριών">
                                 <Menu className="w-5 h-5" />
+                                <span className="hidden sm:inline">{currentCategoryNode?.name || 'Κατηγορίες'}</span>
                             </button>
                             <button 
                                 onClick={resetFilters}
-                                className="md:hidden flex items-center gap-2 text-left hover:opacity-85 transition cursor-pointer focus:outline-none select-none mr-1"
+                                className="flex items-center gap-2 text-left hover:opacity-85 transition cursor-pointer focus:outline-none select-none shrink-0"
                                 title="Αρχική"
                             >
                                 <ShoppingBasket className="w-6 h-6 text-indigo-500" />
-                                <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent">Kallathaki</span>
+                                <span className="hidden sm:inline text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent">Kallathaki</span>
                             </button>
                             
-                            <div className="relative flex-1 max-w-md">
+                            <div className="relative flex-1 min-w-[160px] max-w-2xl">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input 
                                     type="text" 
@@ -1480,28 +1486,28 @@ export default function KallathakiApp() {
                                             </h3>
                                             <p className="text-sm text-slate-500 mt-1">Μεγάλες κατηγορίες, καθαρή πλοήγηση, γρήγορη σύγκριση.</p>
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                             {categories.map((cat) => {
-                                                const meta = CATEGORY_META[cat.category_id] || { emoji: '📦', gradient: 'from-slate-500/10 to-slate-600/10 text-slate-550' };
                                                 return (
                                                     <button
                                                         key={cat.category_id}
                                                         onClick={() => handleCategoryClick(cat.category_id)}
-                                                        className={`
-                                                            min-h-36 flex flex-col items-start justify-between text-left p-5 rounded-2xl border border-border-custom 
-                                                            bg-gradient-to-br ${meta.gradient} shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] transition duration-300 cursor-pointer group
-                                                        `}
+                                                        className="min-h-24 flex items-center gap-4 text-left p-4 rounded-2xl border border-border-custom bg-card-bg shadow-sm hover:shadow-md hover:border-indigo-500/40 active:scale-[0.99] transition duration-200 cursor-pointer group"
                                                     >
-                                                        <div className="w-full flex items-start justify-between gap-2">
-                                                            <span className="text-3xl group-hover:scale-110 transition duration-300">{meta.emoji}</span>
-                                                            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition" />
+                                                        <div className="w-14 h-14 rounded-xl bg-input-custom border border-border-custom overflow-hidden flex items-center justify-center shrink-0">
+                                                            {cat.image_url ? (
+                                                                <img src={cat.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                                                            ) : (
+                                                                <ShoppingBag className="w-5 h-5 text-slate-400" />
+                                                            )}
                                                         </div>
-                                                        <div className="w-full">
-                                                            <span className="text-sm font-black text-slate-850 dark:text-slate-100 block leading-tight">{cat.name}</span>
-                                                            <span className="inline-flex mt-3 px-2.5 py-1 rounded-full bg-background/75 border border-border-custom text-[10px] text-slate-650 dark:text-slate-300 font-bold">
+                                                        <div className="min-w-0 flex-1">
+                                                            <span className="text-sm font-black text-slate-850 dark:text-slate-100 block leading-tight truncate">{cat.name}</span>
+                                                            <span className="text-[11px] text-slate-500 font-bold mt-1 block">
                                                                 {cat.total_product_count ? `${cat.total_product_count.toLocaleString('el-GR')} προϊόντα` : 'Δείτε όλα'}
                                                             </span>
                                                         </div>
+                                                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition shrink-0" />
                                                     </button>
                                                 );
                                             })}
@@ -2676,6 +2682,117 @@ export default function KallathakiApp() {
                         </div>
                     )}
                 </div>
+
+                {isCategoryBrowserOpen && (
+                    <div className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm flex items-start justify-center p-3 sm:p-6" onClick={() => setIsCategoryBrowserOpen(false)}>
+                        <div className="w-full max-w-3xl max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] bg-panel-bg border border-border-custom rounded-2xl shadow-2xl overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+                            <div className="p-4 sm:p-5 border-b border-border-custom flex items-start justify-between gap-4">
+                                <div>
+                                    <h2 className="text-lg font-black text-slate-850 dark:text-slate-100">Κατηγορίες</h2>
+                                    <p className="text-xs text-slate-500 mt-1">Βρείτε γρήγορα μια βασική κατηγορία ή συγκεκριμένη υποκατηγορία.</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsCategoryBrowserOpen(false)}
+                                    className="p-2 rounded-xl hover:bg-input-custom text-slate-500 transition shrink-0"
+                                    aria-label="Κλείσιμο κατηγοριών"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-4 sm:p-5 border-b border-border-custom">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        value={categoryBrowserQuery}
+                                        onChange={(e) => setCategoryBrowserQuery(e.target.value)}
+                                        placeholder="Αναζήτηση κατηγορίας"
+                                        aria-label="Αναζήτηση κατηγορίας"
+                                        className="w-full pl-10 pr-10 py-3 text-sm bg-input-custom border border-transparent focus:border-indigo-500 focus:bg-background rounded-xl outline-none transition text-foreground"
+                                        autoFocus
+                                    />
+                                    {categoryBrowserQuery && (
+                                        <button
+                                            onClick={() => setCategoryBrowserQuery('')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                                            aria-label="Καθαρισμός αναζήτησης κατηγορίας"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+                                {loadingCategories ? (
+                                    <div className="h-40 flex items-center justify-center text-sm text-slate-500">
+                                        <RefreshCw className="w-4 h-4 animate-spin mr-2 text-amber-500" />
+                                        Φόρτωση κατηγοριών
+                                    </div>
+                                ) : visibleCategoryGroups.length === 0 ? (
+                                    <div className="h-40 flex flex-col items-center justify-center text-center">
+                                        <Search className="w-8 h-8 text-slate-400 mb-2" />
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Δεν βρέθηκαν κατηγορίες</p>
+                                        <p className="text-xs text-slate-500 mt-1">Δοκιμάστε πιο γενικό όρο.</p>
+                                    </div>
+                                ) : (
+                                    visibleCategoryGroups.map((cat) => {
+                                        const isActive = selectedCategoryId === cat.category_id;
+                                        const children = cat.children || [];
+
+                                        return (
+                                            <div key={cat.category_id} className="rounded-2xl border border-border-custom bg-card-bg overflow-hidden">
+                                                <button
+                                                    onClick={() => handleCategoryClick(cat.category_id)}
+                                                    className={`w-full p-4 flex items-center gap-4 text-left transition ${isActive ? 'bg-indigo-500/10' : 'hover:bg-input-custom'}`}
+                                                >
+                                                    <div className="w-12 h-12 rounded-xl bg-input-custom border border-border-custom overflow-hidden flex items-center justify-center shrink-0">
+                                                        {cat.image_url ? (
+                                                            <img src={cat.image_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                                                        ) : (
+                                                            <ShoppingBag className="w-5 h-5 text-slate-400" />
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="text-sm font-black text-slate-850 dark:text-slate-100 truncate">{cat.name}</div>
+                                                        <div className="text-[11px] text-slate-500 font-bold mt-1">
+                                                            {cat.total_product_count ? `${cat.total_product_count.toLocaleString('el-GR')} προϊόντα` : 'Προβολή προϊόντων'}
+                                                        </div>
+                                                    </div>
+                                                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                                                </button>
+
+                                                {children.length > 0 && (
+                                                    <div className="px-3 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        {children.slice(0, categoryBrowserQuery ? 12 : 8).map((sub) => {
+                                                            const isSubActive = selectedSubcategoryId === sub.category_id;
+
+                                                            return (
+                                                                <button
+                                                                    key={sub.category_id}
+                                                                    onClick={(e) => selectSubcategory(e, cat.category_id, sub.category_id)}
+                                                                    className={`min-h-11 px-3 py-2 rounded-xl text-left text-xs font-bold transition flex items-center justify-between gap-3 ${
+                                                                        isSubActive
+                                                                            ? 'bg-indigo-500 text-white'
+                                                                            : 'bg-input-custom hover:bg-indigo-500/10 text-slate-650 dark:text-slate-300'
+                                                                    }`}
+                                                                >
+                                                                    <span className="truncate">{sub.name}</span>
+                                                                    <span className="shrink-0 opacity-75">{sub.total_product_count || 0}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Mobile Bottom Navigation Bar */}
                 <nav className="md:hidden fixed bottom-0 left-0 right-0 z-35 bg-sidebar-bg/95 backdrop-blur border-t border-border-custom px-2 pt-2 pb-[calc(0.6rem+env(safe-area-inset-bottom))] grid grid-cols-5 shadow-[0_-10px_30px_rgba(15,23,42,0.08)]">
