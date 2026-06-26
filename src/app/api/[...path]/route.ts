@@ -1,10 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import categoriesFallback from './categories-fallback.json';
+import productsFallback from './products-fallback.json';
 import statsFallback from './stats-fallback.json';
 
 const GOV_API_URL = process.env.GOV_API_URL || 'https://api.posokanei.gov.gr';
 
 type CacheEntry = { data: unknown; timestamp: number };
+
+type ProductSearchPayload = {
+  title?: string;
+  category_id?: string;
+  page?: number;
+  page_size?: number;
+  sort_by?: string;
+  sort_order?: string;
+};
+
+type FallbackProduct = {
+  name?: string;
+  title?: string;
+  brand?: string;
+  category?: string;
+  subcategory?: string;
+  category_ids?: string[];
+  price_stats?: {
+    min_price?: number;
+    max_price?: number;
+    avg_price?: number;
+    min_unit_price?: number;
+  };
+};
 
 const apiCache = new Map<string, CacheEntry>();
 const CACHE_TTL_BY_PATH: Array<[RegExp, number]> = [
@@ -156,6 +181,56 @@ function staticFallbackForGet(targetPath: string) {
   return null;
 }
 
+function productSearchFallback(payload: ProductSearchPayload) {
+  const page = Math.max(1, Number(payload.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(payload.page_size) || 24));
+  const titleQuery = String(payload.title || '').trim().toLocaleLowerCase('el-GR');
+  const categoryId = String(payload.category_id || '').trim();
+  const allProducts = (productsFallback.products || []) as FallbackProduct[];
+
+  const filtered = allProducts.filter((product) => {
+    if (categoryId && !(product.category_ids || []).includes(categoryId)) {
+      return false;
+    }
+
+    if (!titleQuery) return true;
+
+    const haystack = [
+      product.name,
+      product.title,
+      product.brand,
+      product.category,
+      product.subcategory
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase('el-GR');
+
+    return haystack.includes(titleQuery);
+  });
+
+  if (payload.sort_by === 'unit_price') {
+    const direction = payload.sort_order === 'desc' ? -1 : 1;
+    filtered.sort((a, b) => {
+      const aPrice = a.price_stats?.min_unit_price ?? a.price_stats?.min_price ?? Number.POSITIVE_INFINITY;
+      const bPrice = b.price_stats?.min_unit_price ?? b.price_stats?.min_price ?? Number.POSITIVE_INFINITY;
+      return (aPrice - bPrice) * direction;
+    });
+  }
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const start = (page - 1) * pageSize;
+
+  return {
+    products: filtered.slice(start, start + pageSize),
+    total,
+    total_pages: totalPages,
+    page,
+    page_size: pageSize
+  };
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
@@ -240,6 +315,7 @@ export async function POST(
 
   if (targetPath === 'products/search') {
     console.warn('[Gov API products/search unavailable]', { targetPath, status: upstream.status });
+    return jsonWithSource(productSearchFallback(body), undefined, 'static-fallback');
   }
 
   return jsonWithSource(
