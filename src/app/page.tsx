@@ -185,41 +185,41 @@ const UI_TEXT = {
         categories: 'Categories',
         openCategories: 'Open categories',
         home: 'Home',
-        productSearch: 'Product search',
+        productSearch: 'Search products',
         productSearchPlaceholder: 'Search products (e.g. milk, feta, rice)...',
         clearSearch: 'Clear search',
         products: 'Products',
         basket: 'Basket',
-        guide: 'Guide',
-        scanBarcode: 'Scan barcode',
-        officialData: 'Prices from official data',
-        compareTitle: 'Compare Supermarket Prices & Save Money',
-        compareText: 'Search products, compare prices across major chains, and build a basket that keeps costs under control.',
-        startCompare: 'Start Comparing Prices',
-        homeSearchTitle: 'Find the best price quickly',
-        homeSearchText: 'Start with a product or choose a category below.',
-        whyCompare: 'Why compare prices',
-        whyCompareText: 'See prices clearly before you reach checkout.',
-        discoverByCategory: 'Browse by category',
-        discoverByCategoryText: 'Large categories, clean navigation, quick comparison.',
+        guide: 'How it works',
+        scanBarcode: 'Scan Barcode',
+        officialData: 'Official price data',
+        compareTitle: 'Find the cheapest way to shop this week',
+        compareText: 'Compare supermarket prices, build your basket, and see where your groceries cost less.',
+        startCompare: 'Compare Prices',
+        homeSearchTitle: 'Search any product',
+        homeSearchText: 'Start with a product or browse the categories below.',
+        whyCompare: 'Shop with confidence',
+        whyCompareText: 'See where your basket costs less before you check out.',
+        discoverByCategory: 'Browse categories',
+        discoverByCategoryText: 'Find products faster with simple grocery categories.',
         productCount: 'products',
         viewAll: 'View all',
-        pricesNotLoadedTitle: 'Prices did not load',
-        noProductsTitle: 'No products found',
-        pricesNotLoadedText: 'We could not load prices right now.',
-        noProductsText: 'Try another search term or choose a different category.',
-        backHome: 'Back to home',
+        pricesNotLoadedTitle: 'We couldn’t load prices',
+        noProductsTitle: 'We couldn’t find that product',
+        pricesNotLoadedText: 'Please try again in a moment.',
+        noProductsText: 'Try searching for milk, coffee, feta, or pasta.',
+        backHome: 'Back to Home',
         foundProducts: 'Found',
         page: 'Page',
         from: 'of',
         previous: 'Previous',
         next: 'Next',
-        categorySearchPlaceholder: 'Search category',
-        categoryBrowserText: 'Quickly find a main category or a specific subcategory.',
+        categorySearchPlaceholder: 'Search categories',
+        categoryBrowserText: 'Find a main category or a specific aisle faster.',
         closeCategories: 'Close categories',
         loadingCategories: 'Loading categories',
-        noCategories: 'No categories found',
-        tryGeneralTerm: 'Try a more general term.',
+        noCategories: 'No matching categories',
+        tryGeneralTerm: 'Try a broader search term.',
         viewProducts: 'View products',
         searchNav: 'Search',
         basketNav: 'Basket',
@@ -365,13 +365,13 @@ export default function KallathakiApp() {
         try {
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
-                alert('Η άδεια για ειδοποιήσεις απορρίφθηκε.');
+                alert(language === 'en' ? 'Notification permission was denied.' : 'Η άδεια για ειδοποιήσεις απορρίφθηκε.');
                 return;
             }
 
             const keyResponse = await fetch('/api/push/public-key', { cache: 'no-store' });
             if (!keyResponse.ok) {
-                setPushStatus('Οι ειδοποιήσεις προσφορών δεν είναι ακόμη έτοιμες στον server.');
+                setPushStatus(language === 'en' ? 'Offer alerts are not ready on the server yet.' : 'Οι ειδοποιήσεις προσφορών δεν είναι ακόμη έτοιμες στον server.');
                 return;
             }
 
@@ -386,10 +386,10 @@ export default function KallathakiApp() {
             await syncPushBasket(subscription);
             localStorage.setItem('kallathaki_sale_notifications', 'true');
             setIsSubscribed(true);
-            setPushStatus('Οι ειδοποιήσεις προσφορών είναι ενεργές.');
+            setPushStatus(language === 'en' ? 'Offer alerts are on.' : 'Οι ειδοποιήσεις προσφορών είναι ενεργές.');
         } catch (error) {
             console.error('Failed to enable sale notifications:', error);
-            alert('Σφάλμα κατά την ενεργοποίηση ειδοποιήσεων. Δοκιμάστε ξανά από τις ρυθμίσεις του browser.');
+            alert(language === 'en' ? 'We couldn’t turn on notifications. Please try again from your browser settings.' : 'Σφάλμα κατά την ενεργοποίηση ειδοποιήσεων. Δοκιμάστε ξανά από τις ρυθμίσεις του browser.');
         }
     };
 
@@ -409,7 +409,7 @@ export default function KallathakiApp() {
             localStorage.setItem('kallathaki_sale_notifications', 'false');
             setIsSubscribed(false);
             setPushStatus('');
-            alert('Απενεργοποιήθηκαν οι ειδοποιήσεις για προσφορές.');
+            alert(language === 'en' ? 'Offer alerts are off.' : 'Απενεργοποιήθηκαν οι ειδοποιήσεις για προσφορές.');
         } catch (error) {
             console.error('Failed to disable sale notifications:', error);
         }
@@ -839,7 +839,7 @@ export default function KallathakiApp() {
     };
 
     const clearAllFavorites = () => {
-        if (confirm("Είστε σίγουροι ότι θέλετε να διαγράψετε όλα τα αγαπημένα σας προϊόντα;")) {
+        if (confirm(language === 'en' ? 'Are you sure you want to remove all saved products?' : "Είστε σίγουροι ότι θέλετε να διαγράψετε όλα τα αγαπημένα σας προϊόντα;")) {
             setFavorites([]);
             setActiveBasketIds([]);
             localStorage.removeItem('posokanei_favorites');
@@ -1071,10 +1071,10 @@ export default function KallathakiApp() {
     // Generate Share Message Text
     const shareMessageText = useMemo(() => {
         if (activeBasketProducts.length === 0) return '';
-        let text = `🛒 Kallathaki.gr - Λίστα Αγορών\n`;
+        let text = language === 'en' ? `🛒 Kallathaki.gr - Shopping List\n` : `🛒 Kallathaki.gr - Λίστα Αγορών\n`;
         text += `================================\n\n`;
 
-        text += `📋 Προϊόντα προς αγορά:\n`;
+        text += language === 'en' ? `📋 Products to buy:\n` : `📋 Προϊόντα προς αγορά:\n`;
         activeBasketProducts.forEach(p => {
             text += `- ${p.name}\n`;
         });
@@ -1107,9 +1107,11 @@ export default function KallathakiApp() {
         if (results.length > 0) {
             const bestSingle = results[0];
             const meta = RETAILER_META[bestSingle.retailerId] || { name: bestSingle.retailerId };
-            text += `1️⃣ Επιλογή Α: Όλα από 1 κατάστημα\n`;
+            text += language === 'en' ? `1️⃣ Option A: Everything from one store\n` : `1️⃣ Επιλογή Α: Όλα από 1 κατάστημα\n`;
             text += `📍 ${meta.name}\n`;
-            text += `💰 Σύνολο: €${bestSingle.totalCost.toFixed(2)} (${bestSingle.itemsCount}/${bestSingle.totalItems} προϊόντα)\n\n`;
+            text += language === 'en'
+                ? `💰 Total: €${bestSingle.totalCost.toFixed(2)} (${bestSingle.itemsCount}/${bestSingle.totalItems} products)\n\n`
+                : `💰 Σύνολο: €${bestSingle.totalCost.toFixed(2)} (${bestSingle.itemsCount}/${bestSingle.totalItems} προϊόντα)\n\n`;
         }
 
         // 2. Split Trip
@@ -1126,7 +1128,7 @@ export default function KallathakiApp() {
 
         const groups = Object.entries(storeGrouping);
         if (groups.length > 0) {
-            text += `2️⃣ Επιλογή Β: Διαμοιρασμός (Καλύτερες Τιμές)\n`;
+            text += language === 'en' ? `2️⃣ Option B: Split basket for best prices\n` : `2️⃣ Επιλογή Β: Διαμοιρασμός (Καλύτερες Τιμές)\n`;
             groups.forEach(([retId, items]) => {
                 const meta = RETAILER_META[retId] || { name: retId };
                 text += `📍 ${meta.name}:\n`;
@@ -1137,7 +1139,7 @@ export default function KallathakiApp() {
         }
 
         return text;
-    }, [activeBasketProducts]);
+    }, [activeBasketProducts, language]);
 
     const webShareLink = useMemo(() => {
         if (!mounted || activeBasketProducts.length === 0) return '';
@@ -1148,13 +1150,13 @@ export default function KallathakiApp() {
     // Copy handlers
     const copyText = () => {
         navigator.clipboard.writeText(shareMessageText).then(() => {
-            alert("Η λίστα αγορών αντιγράφηκε! Μπορείτε να τη στείλετε μέσω WhatsApp/Viber.");
+            alert(language === 'en' ? 'Shopping list copied. You can send it through WhatsApp or Viber.' : 'Η λίστα αγορών αντιγράφηκε! Μπορείτε να τη στείλετε μέσω WhatsApp/Viber.');
         });
     };
 
     const copyLink = () => {
         navigator.clipboard.writeText(webShareLink).then(() => {
-            alert("Ο σύνδεσμος Kallathaki.gr αντιγράφηκε στο πρόχειρο!");
+            alert(language === 'en' ? 'Kallathaki.gr link copied to clipboard.' : 'Ο σύνδεσμος Kallathaki.gr αντιγράφηκε στο πρόχειρο!');
         });
     };
 
@@ -1596,28 +1598,28 @@ export default function KallathakiApp() {
                                                 {
                                                     label: language === 'en' ? 'More choices' : 'Περισσότερες επιλογές',
                                                     value: stats ? Number(stats.total_products).toLocaleString('el-GR') : '8.773',
-                                                    desc: language === 'en' ? 'Products available for price comparison' : 'Προϊόντα για σύγκριση τιμών',
+                                                    desc: language === 'en' ? 'Products ready to compare' : 'Προϊόντα για σύγκριση τιμών',
                                                     icon: <ShoppingBag className="w-5 h-5 text-indigo-500" />,
                                                     bgColor: 'bg-indigo-500/10'
                                                 },
                                                 {
-                                                    label: language === 'en' ? 'Today’s deals' : 'Ευκαιρίες σήμερα',
+                                                    label: language === 'en' ? 'Offers today' : 'Ευκαιρίες σήμερα',
                                                     value: stats ? Number(stats.products_on_discount).toLocaleString('el-GR') : '2.263',
-                                                    desc: language === 'en' ? 'Products marked as offers' : 'Προϊόντα με ένδειξη προσφοράς',
+                                                    desc: language === 'en' ? 'Products currently on offer' : 'Προϊόντα με ένδειξη προσφοράς',
                                                     icon: <Percent className="w-5 h-5 text-emerald-500" />,
                                                     bgColor: 'bg-emerald-500/10'
                                                 },
                                                 {
-                                                    label: language === 'en' ? 'Chain comparison' : 'Σύγκριση αλυσίδων',
-                                                    value: language === 'en' ? `${ALLOWED_RETAILERS.length} chains` : `${ALLOWED_RETAILERS.length} αλυσίδες`,
-                                                    desc: language === 'en' ? 'Core choices for everyday shopping' : 'Οι βασικές επιλογές για καθημερινά ψώνια',
+                                                    label: language === 'en' ? 'Supermarket coverage' : 'Σύγκριση αλυσίδων',
+                                                    value: language === 'en' ? `${ALLOWED_RETAILERS.length} supermarkets` : `${ALLOWED_RETAILERS.length} αλυσίδες`,
+                                                    desc: language === 'en' ? 'Major chains for everyday shopping' : 'Οι βασικές επιλογές για καθημερινά ψώνια',
                                                     icon: <Store className="w-5 h-5 text-amber-500" />,
                                                     bgColor: 'bg-amber-500/10'
                                                 },
                                                 {
-                                                    label: language === 'en' ? 'Recent prices' : 'Πρόσφατες τιμές',
+                                                    label: language === 'en' ? 'Fresh prices' : 'Πρόσφατες τιμές',
                                                     value: stats ? formatGreekDate(stats.timestamp) : (language === 'en' ? 'Today' : 'Σήμερα'),
-                                                    desc: language === 'en' ? 'Latest data update' : 'Τελευταία ενημέρωση δεδομένων',
+                                                    desc: language === 'en' ? 'Latest price update' : 'Τελευταία ενημέρωση δεδομένων',
                                                     icon: <Clock3 className="w-5 h-5 text-violet-500" />,
                                                     bgColor: 'bg-violet-500/10'
                                                 }
@@ -2040,6 +2042,7 @@ export default function KallathakiApp() {
                         ) : (
                             // FAVORITES & BASKET OPTIMIZER VIEW
                             <FavoritesView
+                                language={language}
                                 favorites={favorites}
                                 activeBasketIds={activeBasketIds}
                                 favoritesSubTab={favoritesSubTab}
@@ -2156,21 +2159,21 @@ export default function KallathakiApp() {
                     ${isShareOpen ? 'translate-x-0 border-l border-border-custom shadow-2xl' : 'translate-x-full border-l-transparent shadow-none pointer-events-none'}
                 `}>
                     <div className="p-6 border-b border-border-custom flex items-center justify-between">
-                        <h3 className="text-base font-bold flex items-center gap-1.5"><Share2 className="w-5 h-5 text-emerald-500" /><span>Κοινοποίηση Λίστας</span></h3>
-                        <button className="p-1 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg" onClick={() => setIsShareOpen(false)} aria-label="Κλείσιμο κοινής χρήσης">
+                        <h3 className="text-base font-bold flex items-center gap-1.5"><Share2 className="w-5 h-5 text-emerald-500" /><span>{language === 'en' ? 'Share List' : 'Κοινοποίηση Λίστας'}</span></h3>
+                        <button className="p-1 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg" onClick={() => setIsShareOpen(false)} aria-label={language === 'en' ? 'Close sharing' : 'Κλείσιμο κοινής χρήσης'}>
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        <p className="text-xs text-slate-400">Επιλέξτε πώς θέλετε να μοιραστείτε τη λίστα αγορών σας με την οικογένειά σας:</p>
+                        <p className="text-xs text-slate-400">{language === 'en' ? 'Choose how you want to share your shopping list.' : 'Επιλέξτε πώς θέλετε να μοιραστείτε τη λίστα αγορών σας με την οικογένειά σας:'}</p>
 
                         <div className="space-y-3">
-                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Κείμενο για WhatsApp / Viber (Λίστα Αγορών)</div>
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{language === 'en' ? 'Text for WhatsApp / Viber' : 'Κείμενο για WhatsApp / Viber (Λίστα Αγορών)'}</div>
                             <textarea 
                                 readOnly 
                                 value={shareMessageText}
-                                aria-label="Κείμενο λίστας αγορών για αντιγραφή"
+                                aria-label={language === 'en' ? 'Shopping list text to copy' : 'Κείμενο λίστας αγορών για αντιγραφή'}
                                 className="w-full h-56 p-3 text-xs bg-input-custom border border-border-custom rounded-xl outline-none resize-none font-sans leading-relaxed text-slate-700 dark:text-slate-200"
                             />
                             <button 
@@ -2178,19 +2181,19 @@ export default function KallathakiApp() {
                                 className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition"
                             >
                                 <Copy className="w-4 h-4" />
-                                <span>Αντιγραφή Λίστας (Κείμενο)</span>
+                                <span>{language === 'en' ? 'Copy List Text' : 'Αντιγραφή Λίστας (Κείμενο)'}</span>
                             </button>
                         </div>
 
                         <div className="border-t border-border-custom my-2"></div>
 
                         <div className="space-y-3">
-                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Web Link (για εισαγωγή στο Kallathaki.gr)</div>
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{language === 'en' ? 'Web link for Kallathaki.gr' : 'Web Link (για εισαγωγή στο Kallathaki.gr)'}</div>
                             <input 
                                 type="text"
                                 readOnly
                                 value={webShareLink}
-                                aria-label="Σύνδεσμος λίστας αγορών για αντιγραφή"
+                                aria-label={language === 'en' ? 'Shopping list link to copy' : 'Σύνδεσμος λίστας αγορών για αντιγραφή'}
                                 className="w-full p-3 text-xs bg-input-custom border border-border-custom rounded-xl outline-none text-slate-750 dark:text-slate-250 truncate"
                             />
                             <button 
@@ -2198,7 +2201,7 @@ export default function KallathakiApp() {
                                 className="w-full py-2.5 bg-input-custom hover:bg-input-custom text-foreground text-xs font-bold rounded-xl flex items-center justify-center gap-2 border border-border-custom transition"
                             >
                                 <LinkIcon className="w-4 h-4" />
-                                <span>Αντιγραφή Συνδέσμου (Web Link)</span>
+                                <span>{language === 'en' ? 'Copy Web Link' : 'Αντιγραφή Συνδέσμου (Web Link)'}</span>
                             </button>
                         </div>
                     </div>
@@ -2213,9 +2216,9 @@ export default function KallathakiApp() {
                     <div className="p-6 border-b border-border-custom flex items-center justify-between">
                         <h3 className="text-base font-bold flex items-center gap-1.5">
                             <MapPin className="w-5 h-5 text-indigo-500" />
-                            <span>Τοποθεσία Καταστήματος</span>
+                            <span>{language === 'en' ? 'Store Location' : 'Τοποθεσία Καταστήματος'}</span>
                         </h3>
-                        <button className="p-1 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg text-slate-500" onClick={() => setActiveMapRetailer(null)} aria-label="Κλείσιμο χάρτη">
+                        <button className="p-1 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg text-slate-500" onClick={() => setActiveMapRetailer(null)} aria-label={language === 'en' ? 'Close map' : 'Κλείσιμο χάρτη'}>
                             <X className="w-5 h-5" />
                         </button>
                     </div>
@@ -2223,14 +2226,14 @@ export default function KallathakiApp() {
                     {activeMapRetailer && (
                         <div className="flex-1 flex flex-col p-6 space-y-4 overflow-y-auto">
                             <div>
-                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">ΣΟΥΠΕΡ ΜΑΡΚΕΤ</span>
+                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">{language === 'en' ? 'SUPERMARKET' : 'ΣΟΥΠΕΡ ΜΑΡΚΕΤ'}</span>
                                 <h4 className="text-lg font-black text-slate-800 dark:text-slate-100 mt-1">
                                     {RETAILER_META[activeMapRetailer]?.name || activeMapRetailer}
                                 </h4>
                                 <p className="text-xs text-slate-400 mt-1 font-medium">
                                     {userCoords 
-                                        ? 'Εμφάνιση του πλησιέστερου καταστήματος με βάση τις συντεταγμένες σας.' 
-                                        : 'Εμφάνιση καταστημάτων. Επιτρέψτε την τοποθεσία στο πρόγραμμα περιήγησης για αυτόματη εύρεση του πλησιέστερου.'}
+                                        ? (language === 'en' ? 'Showing the nearest store based on your location.' : 'Εμφάνιση του πλησιέστερου καταστήματος με βάση τις συντεταγμένες σας.')
+                                        : (language === 'en' ? 'Showing store locations. Allow location access to find the nearest one automatically.' : 'Εμφάνιση καταστημάτων. Επιτρέψτε την τοποθεσία στο πρόγραμμα περιήγησης για αυτόματη εύρεση του πλησιέστερου.')}
                                 </p>
                             </div>
 
@@ -2260,7 +2263,7 @@ export default function KallathakiApp() {
                                 className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 transition duration-300"
                             >
                                 <MapPin className="w-4 h-4" />
-                                <span>Έναρξη Πλοήγησης (Google Maps)</span>
+                                <span>{language === 'en' ? 'Open Directions in Google Maps' : 'Έναρξη Πλοήγησης (Google Maps)'}</span>
                             </a>
                         </div>
                     )}
