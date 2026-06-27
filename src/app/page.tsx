@@ -141,6 +141,8 @@ interface Stats {
     products_on_discount: number;
 }
 
+type DataSource = 'upstream' | 'cache' | 'stale-cache' | 'static-fallback' | 'error' | '';
+
 type AppLanguage = 'el' | 'en';
 
 const UI_TEXT = {
@@ -296,7 +298,9 @@ export default function KallathakiApp() {
     // App state
     const [categories, setCategories] = useState<CategoryNode[]>([]);
     const [stats, setStats] = useState<Stats | null>(null);
+    const [statsDataSource, setStatsDataSource] = useState<DataSource>('');
     const [products, setProducts] = useState<Product[]>([]);
+    const [productsDataSource, setProductsDataSource] = useState<DataSource>('');
     const [favorites, setFavorites] = useState<Product[]>([]);
     const [isRefreshingSavedProducts, setIsRefreshingSavedProducts] = useState(false);
     const [activeBasketIds, setActiveBasketIds] = useState<string[]>([]);
@@ -588,6 +592,7 @@ export default function KallathakiApp() {
                 // Fetch stats
                 const statsRes = await fetch('/api/meta/stats');
                 if (statsRes.ok) {
+                    setStatsDataSource((statsRes.headers.get('x-kallathaki-data-source') || '') as DataSource);
                     setStats(await statsRes.json());
                 }
 
@@ -611,6 +616,17 @@ export default function KallathakiApp() {
         const snapshotDate = statsCatalogUpdatedAt(stats);
         if (!snapshotDate) return;
 
+        const shouldWarn =
+            statsDataSource === 'static-fallback' ||
+            statsDataSource === 'stale-cache' ||
+            productsDataSource === 'static-fallback' ||
+            productsDataSource === 'stale-cache';
+
+        if (!shouldWarn) {
+            setShowFreshnessNotice(false);
+            return;
+        }
+
         const snapshotKey = athensDateKey(snapshotDate);
         const todayKey = athensDateKey(new Date());
         const ageDays = dayDiffFromAthensKeys(snapshotKey, todayKey);
@@ -625,7 +641,7 @@ export default function KallathakiApp() {
 
         const dismissedFor = localStorage.getItem('kallathaki_freshness_notice_dismissed_for');
         setShowFreshnessNotice(dismissedFor !== snapshotKey);
-    }, [mounted, stats]);
+    }, [mounted, stats, statsDataSource, productsDataSource]);
 
     // Fetch Products when filters change
     useEffect(() => {
@@ -669,17 +685,20 @@ export default function KallathakiApp() {
                     body: JSON.stringify(payload)
                 });
                 if (res.ok) {
+                    setProductsDataSource((res.headers.get('x-kallathaki-data-source') || '') as DataSource);
                     const data = await res.json();
                     setProducts((data.products || []).map(sanitizeProduct));
                     setTotalPages(data.total_pages || 1);
                     setTotalProductsCount(data.total || 0);
                 } else {
+                    setProductsDataSource('error');
                     setProducts([]);
                     setTotalProductsCount(0);
                     setProductError('Δεν μπορέσαμε να φορτώσουμε τις τιμές αυτή τη στιγμή.');
                 }
             } catch (error) {
                 console.error("Failed to load products", error);
+                setProductsDataSource('error');
                 setProducts([]);
                 setTotalProductsCount(0);
                 setProductError('Υπήρξε προσωρινό πρόβλημα σύνδεσης. Δοκιμάστε ξανά σε λίγο.');
