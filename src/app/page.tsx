@@ -194,7 +194,30 @@ const UI_TEXT = {
         basketNav: 'Καλάθι',
         optimizeNav: 'Βελτίωση',
         offersNav: 'Προσφορές',
-        profileNav: 'Προφίλ'
+        profileNav: 'Προφίλ',
+        offersBadge: 'Προσφορές που αξίζουν',
+        offersTitle: 'Κερδίστε περισσότερα από κάθε καλάθι',
+        offersText: 'Ανακαλύψτε προϊόντα με ένδειξη προσφοράς και προσθέστε τα στο καλάθι σας για άμεση βελτιστοποίηση.',
+        offersEmptyTitle: 'Δεν έχουν φορτωθεί προσφορές ακόμη',
+        offersEmptyText: 'Ξεκινήστε με μια αναζήτηση ή επιλέξτε κατηγορία για να εμφανίσουμε σχετικές ευκαιρίες.',
+        searchProducts: 'Αναζήτηση προϊόντων',
+        biggestDiscounts: 'Μεγαλύτερες εκπτώσεις',
+        biggestDiscountsText: 'Προϊόντα με εμφανή προσφορά σήμερα',
+        suggestedOffers: 'Προτεινόμενες προσφορές',
+        suggestedOffersText: 'Ευκαιρίες από τις πρόσφατες αναζητήσεις σας',
+        offerLabel: 'Προσφορά',
+        profileTitle: 'Το Kallathaki σας',
+        profileText: 'Αποθηκευμένα καλάθια, αγαπημένα προϊόντα και ιστορικό αγορών.',
+        favoriteProducts: 'Αγαπημένα προϊόντα',
+        favoriteProductsText: 'Προϊόντα που έχετε κρατήσει για επόμενες αγορές.',
+        activeBasketTitle: 'Ενεργό καλάθι',
+        activeBasketText: 'Προϊόντα έτοιμα για βελτιστοποίηση.',
+        estimatedSavings: 'Εκτιμώμενη εξοικονόμηση',
+        estimatedSavingsText: 'Με βάση το τρέχον καλάθι.',
+        savedBaskets: 'Αποθηκευμένα καλάθια',
+        shoppingHistory: 'Ιστορικό αγορών',
+        favoriteSupermarkets: 'Αγαπημένα σούπερ μάρκετ',
+        settings: 'Ρυθμίσεις'
     },
     en: {
         categories: 'Categories',
@@ -244,7 +267,30 @@ const UI_TEXT = {
         basketNav: 'Basket',
         optimizeNav: 'Optimize',
         offersNav: 'Offers',
-        profileNav: 'Profile'
+        profileNav: 'Profile',
+        offersBadge: 'Worthwhile offers',
+        offersTitle: 'Get more out of every basket',
+        offersText: 'Discover discounted products and add them to your basket for instant optimization.',
+        offersEmptyTitle: 'No offers loaded yet',
+        offersEmptyText: 'Start with a search or pick a category and we will show relevant deals.',
+        searchProducts: 'Search products',
+        biggestDiscounts: 'Biggest discounts',
+        biggestDiscountsText: 'Products with clear discounts today',
+        suggestedOffers: 'Suggested offers',
+        suggestedOffersText: 'Deals based on your recent searches',
+        offerLabel: 'Offer',
+        profileTitle: 'Your Kallathaki',
+        profileText: 'Saved baskets, favorite products, and shopping history.',
+        favoriteProducts: 'Favorite products',
+        favoriteProductsText: 'Products you have saved for future shopping.',
+        activeBasketTitle: 'Active basket',
+        activeBasketText: 'Products ready for optimization.',
+        estimatedSavings: 'Estimated savings',
+        estimatedSavingsText: 'Based on your current basket.',
+        savedBaskets: 'Saved baskets',
+        shoppingHistory: 'Shopping history',
+        favoriteSupermarkets: 'Favorite supermarkets',
+        settings: 'Settings'
     }
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -1926,11 +1972,11 @@ export default function KallathakiApp() {
                                     <div className="max-w-2xl">
                                         <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-[11px] font-bold mb-4">
                                             <Percent className="w-3.5 h-3.5" />
-                                            Προσφορές που αξίζουν
+                                            {t('offersBadge')}
                                         </span>
-                                        <h2 className="text-3xl font-black tracking-tight">Κερδίστε περισσότερα από κάθε καλάθι</h2>
+                                        <h2 className="text-3xl font-black tracking-tight">{t('offersTitle')}</h2>
                                         <p className="text-sm text-white/80 mt-2">
-                                            Ανακαλύψτε προϊόντα με ένδειξη προσφοράς και προσθέστε τα στο καλάθι σας για άμεση βελτιστοποίηση.
+                                            {t('offersText')}
                                         </p>
                                     </div>
                                 </section>
@@ -1938,20 +1984,20 @@ export default function KallathakiApp() {
                                 {products.filter((product) => product.retailer_prices.some((price) => price.is_discount)).length === 0 ? (
                                     <div className="bg-card-bg border border-border-custom rounded-3xl p-8 text-center">
                                         <Percent className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                                        <h3 className="text-lg font-black">Δεν έχουν φορτωθεί προσφορές ακόμη</h3>
-                                        <p className="text-sm text-slate-500 mt-2">Ξεκινήστε με μια αναζήτηση ή επιλέξτε κατηγορία για να εμφανίσουμε σχετικές ευκαιρίες.</p>
+                                        <h3 className="text-lg font-black">{t('offersEmptyTitle')}</h3>
+                                        <p className="text-sm text-slate-500 mt-2">{t('offersEmptyText')}</p>
                                         <button
                                             onClick={() => setActiveTab('products')}
                                             className="mt-5 px-5 py-3 bg-indigo-500 text-white rounded-2xl text-sm font-black"
                                         >
-                                            Αναζήτηση προϊόντων
+                                            {t('searchProducts')}
                                         </button>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                                         {[
-                                            { title: 'Μεγαλύτερες εκπτώσεις', subtitle: 'Προϊόντα με εμφανή προσφορά σήμερα' },
-                                            { title: 'Προτεινόμενες προσφορές', subtitle: 'Ευκαιρίες από τις πρόσφατες αναζητήσεις σας' }
+                                            { title: t('biggestDiscounts'), subtitle: t('biggestDiscountsText') },
+                                            { title: t('suggestedOffers'), subtitle: t('suggestedOffersText') }
                                         ].map((section) => (
                                             <div key={section.title} className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm">
                                                 <h3 className="text-base font-black text-slate-850 dark:text-slate-100">{section.title}</h3>
@@ -1972,7 +2018,7 @@ export default function KallathakiApp() {
                                                                 </div>
                                                                 <div className="text-right">
                                                                     <div className="text-sm font-black text-emerald-600">€{(cheapest?.price || product.price_stats.min_price || 0).toFixed(2)}</div>
-                                                                    <div className="text-[10px] font-black text-white bg-emerald-500 px-2 py-0.5 rounded-full">Προσφορά</div>
+                                                                    <div className="text-[10px] font-black text-white bg-emerald-500 px-2 py-0.5 rounded-full">{t('offerLabel')}</div>
                                                                 </div>
                                                             </button>
                                                         );
@@ -1991,17 +2037,17 @@ export default function KallathakiApp() {
                                             <UserCircle className="w-9 h-9" />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-black text-slate-850 dark:text-slate-100">Το Kallathaki σας</h2>
-                                            <p className="text-sm text-slate-500 mt-1">Αποθηκευμένα καλάθια, αγαπημένα προϊόντα και ιστορικό αγορών.</p>
+                                            <h2 className="text-2xl font-black text-slate-850 dark:text-slate-100">{t('profileTitle')}</h2>
+                                            <p className="text-sm text-slate-500 mt-1">{t('profileText')}</p>
                                         </div>
                                     </div>
                                 </section>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                                     {[
-                                        { title: 'Αγαπημένα προϊόντα', value: favorites.length, text: 'Προϊόντα που έχετε κρατήσει για επόμενες αγορές.', icon: <Heart className="w-5 h-5" /> },
-                                        { title: 'Ενεργό καλάθι', value: activeBasketProducts.length, text: 'Προϊόντα έτοιμα για βελτιστοποίηση.', icon: <ShoppingBasket className="w-5 h-5" /> },
-                                        { title: 'Εκτιμώμενη εξοικονόμηση', value: `€${basketOptimizer.bestPossibleSaving.toFixed(2)}`, text: 'Με βάση το τρέχον καλάθι.', icon: <PiggyBank className="w-5 h-5" /> }
+                                        { title: t('favoriteProducts'), value: favorites.length, text: t('favoriteProductsText'), icon: <Heart className="w-5 h-5" /> },
+                                        { title: t('activeBasketTitle'), value: activeBasketProducts.length, text: t('activeBasketText'), icon: <ShoppingBasket className="w-5 h-5" /> },
+                                        { title: t('estimatedSavings'), value: `€${basketOptimizer.bestPossibleSaving.toFixed(2)}`, text: t('estimatedSavingsText'), icon: <PiggyBank className="w-5 h-5" /> }
                                     ].map((item) => (
                                         <div key={item.title} className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm">
                                             <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center mb-4">{item.icon}</div>
@@ -2013,7 +2059,7 @@ export default function KallathakiApp() {
                                 </div>
 
                                 <div className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm divide-y divide-border-custom">
-                                    {['Αποθηκευμένα καλάθια', 'Ιστορικό αγορών', 'Αγαπημένα σούπερ μάρκετ', 'Ρυθμίσεις'].map((label) => (
+                                    {[t('savedBaskets'), t('shoppingHistory'), t('favoriteSupermarkets'), t('settings')].map((label) => (
                                         <button key={label} className="w-full min-h-14 flex items-center justify-between text-left text-sm font-bold text-slate-750 dark:text-slate-200">
                                             <span>{label}</span>
                                             <ChevronRight className="w-4 h-4 text-slate-400" />
