@@ -7,7 +7,8 @@ import {
     Search, Moon, Sun, Heart, Share2, Copy, Link as LinkIcon,
     X, Sparkles, ShoppingBag, ChevronRight, ChevronLeft, LayoutGrid,
     Store, Percent, Trophy, Info, PiggyBank, RefreshCw, Menu, ShoppingBasket,
-    MapPin, Camera, ShieldCheck, Clock3, UserCircle, AlertTriangle
+    MapPin, Camera, ShieldCheck, Clock3, UserCircle, AlertTriangle, ArrowLeft,
+    Check, Trash2
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -141,6 +142,47 @@ interface Stats {
     products_on_discount: number;
 }
 
+interface SavedBasket {
+    id: string;
+    name: string;
+    createdAt: string;
+    products: Product[];
+}
+
+interface HistoryEntry {
+    id: string;
+    date: string;
+    totalCost: number;
+    savings: number;
+    stores: string[];
+    itemCount: number;
+    items: { id: string; name: string; price: number; retailer: string }[];
+}
+
+interface OptimizerItem {
+    id: string;
+    name: string;
+    price: number;
+}
+
+interface OptimizerGroup {
+    retailerId: string;
+    items: OptimizerItem[];
+    total: number;
+}
+
+interface OptimizerOption {
+    stores: string[];
+    stops: number;
+    totalCost: number;
+    coveredItems: number;
+    totalItems: number;
+    missingItems: Product[];
+    groups: OptimizerGroup[];
+    complete: boolean;
+}
+
+
 type DataSource = 'upstream' | 'cache' | 'stale-cache' | 'static-fallback' | 'error' | '';
 
 type AppLanguage = 'el' | 'en';
@@ -217,7 +259,38 @@ const UI_TEXT = {
         savedBaskets: 'Αποθηκευμένα καλάθια',
         shoppingHistory: 'Ιστορικό αγορών',
         favoriteSupermarkets: 'Αγαπημένα σούπερ μάρκετ',
-        settings: 'Ρυθμίσεις'
+        settings: 'Ρυθμίσεις',
+        backToProfile: 'Επιστροφή στο προφίλ',
+        saveCurrentBasket: 'Αποθήκευση τρέχοντος καλαθιού',
+        noSavedBaskets: 'Δεν έχετε αποθηκευμένα καλάθια ακόμη.',
+        saveBasketPrompt: 'Δώστε ένα όνομα για να αποθηκεύσετε το τρέχον καλάθι σας:',
+        basketNamePlaceholder: 'π.χ. Εβδομαδιαία ψώνια',
+        load: 'Φόρτωση',
+        delete: 'Διαγραφή',
+        activeBasketIsEmpty: 'Το καλάθι σας είναι άδειο. Προσθέστε προϊόντα πρώτα!',
+        noHistory: 'Δεν υπάρχει ιστορικό αγορών ακόμη.',
+        completedTrip: 'Ολοκληρωμένη αγορά',
+        clearHistory: 'Καθαρισμός ιστορικού',
+        totalSpent: 'Σύνολο',
+        totalSavings: 'Εξοικονόμηση',
+        date: 'Ημερομηνία',
+        storesVisited: 'Καταστήματα',
+        details: 'Λεπτομέρειες',
+        supermarketsDescription: 'Επιλέξτε τα σούπερ μάρκετ που προτιμάτε. Θα εμφανίζονται κατά προτεραιότητα στις συγκρίσεις.',
+        resetAppDataPrompt: 'Προσοχή: Αυτή η ενέργεια θα διαγράψει όλα τα δεδομένα σας (αγαπημένα, καλάθια, ιστορικό) μόνιμα.',
+        resetAppDataConfirm: 'Είστε σίγουροι ότι θέλετε να προχωρήσετε;',
+        resetAppDataButton: 'Επαναφορά Δεδομένων',
+        languageSettings: 'Γλώσσα',
+        themeSettings: 'Εμφάνιση',
+        themeLight: 'Φωτεινό',
+        themeDark: 'Σκοτεινό',
+        basketSavedSuccess: 'Το καλάθι αποθηκεύτηκε επιτυχώς!',
+        basketLoadedSuccess: 'Το καλάθι φορτώθηκε επιτυχώς!',
+        tripRecordedSuccess: 'Η αγορά καταγράφηκε στο ιστορικό!',
+        confirmDeleteBasket: 'Θέλετε σίγουρα να διαγράψετε αυτό το καλάθι;',
+        confirmDeleteTrip: 'Θέλετε σίγουρα να διαγράψετε αυτή την αγορά;',
+        confirmClearHistory: 'Θέλετε σίγουρα να καθαρίσετε όλο το ιστορικό αγορών;',
+        recordTrip: 'Καταγραφή Αγοράς'
     },
     en: {
         categories: 'Categories',
@@ -290,7 +363,38 @@ const UI_TEXT = {
         savedBaskets: 'Saved baskets',
         shoppingHistory: 'Shopping history',
         favoriteSupermarkets: 'Favorite supermarkets',
-        settings: 'Settings'
+        settings: 'Settings',
+        backToProfile: 'Back to Profile',
+        saveCurrentBasket: 'Save Current Basket',
+        noSavedBaskets: 'No saved baskets yet.',
+        saveBasketPrompt: 'Give a name to save your current basket:',
+        basketNamePlaceholder: 'e.g. Weekly shopping',
+        load: 'Load',
+        delete: 'Delete',
+        activeBasketIsEmpty: 'Your active basket is empty. Add products first!',
+        noHistory: 'No shopping history yet.',
+        completedTrip: 'Completed shopping trip',
+        clearHistory: 'Clear History',
+        totalSpent: 'Total Spent',
+        totalSavings: 'Total Savings',
+        date: 'Date',
+        storesVisited: 'Stores',
+        details: 'Details',
+        supermarketsDescription: 'Choose your preferred supermarkets. They will be prioritized in comparisons.',
+        resetAppDataPrompt: 'Warning: This action will permanently delete all your data (favorites, baskets, history).',
+        resetAppDataConfirm: 'Are you sure you want to proceed?',
+        resetAppDataButton: 'Reset All Data',
+        languageSettings: 'Language',
+        themeSettings: 'Theme',
+        themeLight: 'Light',
+        themeDark: 'Dark',
+        basketSavedSuccess: 'Basket saved successfully!',
+        basketLoadedSuccess: 'Basket loaded successfully!',
+        tripRecordedSuccess: 'Shopping trip saved to history!',
+        confirmDeleteBasket: 'Are you sure you want to delete this basket?',
+        confirmDeleteTrip: 'Are you sure you want to delete this trip?',
+        confirmClearHistory: 'Are you sure you want to clear all shopping history?',
+        recordTrip: 'Record Trip'
     }
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -361,6 +465,20 @@ export default function KallathakiApp() {
     const [showOptimizerResults, setShowOptimizerResults] = useState(false);
     const didRefreshSavedProducts = useRef(false);
 
+    const [savedBaskets, setSavedBaskets] = useState<SavedBasket[]>([]);
+    const [shoppingHistory, setShoppingHistory] = useState<HistoryEntry[]>([]);
+    const [favoriteRetailers, setFavoriteRetailers] = useState<string[]>(ALLOWED_RETAILERS);
+    const [profileSubView, setProfileSubView] = useState<'savedBaskets' | 'history' | 'supermarkets' | 'settings' | null>(null);
+    const [newBasketName, setNewBasketName] = useState('');
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (toastMessage) {
+            const timer = setTimeout(() => setToastMessage(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toastMessage]);
+
     const activeBasketProducts = useMemo(() => {
         return favorites.filter(p => activeBasketIds.includes(p.id));
     }, [favorites, activeBasketIds]);
@@ -388,6 +506,111 @@ export default function KallathakiApp() {
     const deselectAllBasketItems = () => {
         setActiveBasketIds([]);
         localStorage.setItem('posokanei_active_basket', JSON.stringify([]));
+    };
+
+    const saveBasket = (name: string) => {
+        if (activeBasketProducts.length === 0) return;
+        const newBasket: SavedBasket = {
+            id: Math.random().toString(36).substring(2, 9),
+            name: name || `Basket ${savedBaskets.length + 1}`,
+            createdAt: new Date().toISOString(),
+            products: activeBasketProducts
+        };
+        setSavedBaskets(prev => {
+            const next = [newBasket, ...prev];
+            localStorage.setItem('kallathaki_saved_baskets', JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const loadBasket = (basket: SavedBasket) => {
+        const newIds = basket.products.map(p => p.id);
+        setActiveBasketIds(newIds);
+        localStorage.setItem('posokanei_active_basket', JSON.stringify(newIds));
+
+        setFavorites(prev => {
+            const updated = [...prev];
+            basket.products.forEach(savedProd => {
+                if (!updated.some(p => p.id === savedProd.id)) {
+                    updated.push(savedProd);
+                }
+            });
+            localStorage.setItem('posokanei_favorites', JSON.stringify(updated));
+            return updated;
+        });
+    };
+
+    const deleteSavedBasket = (basketId: string) => {
+        setSavedBaskets(prev => {
+            const next = prev.filter(b => b.id !== basketId);
+            localStorage.setItem('kallathaki_saved_baskets', JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const deleteHistoryEntry = (entryId: string) => {
+        setShoppingHistory(prev => {
+            const next = prev.filter(h => h.id !== entryId);
+            localStorage.setItem('kallathaki_shopping_history', JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const clearShoppingHistory = () => {
+        setShoppingHistory([]);
+        localStorage.setItem('kallathaki_shopping_history', JSON.stringify([]));
+    };
+
+    const toggleFavoriteRetailer = (retailerId: string) => {
+        setFavoriteRetailers(prev => {
+            const next = prev.includes(retailerId)
+                ? prev.filter(id => id !== retailerId)
+                : [...prev, retailerId];
+            localStorage.setItem('kallathaki_favorite_retailers', JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const recordTrip = (recommendedOption: OptimizerOption) => {
+        if (!recommendedOption) return;
+        const entry: HistoryEntry = {
+            id: Math.random().toString(36).substring(2, 9),
+            date: new Date().toISOString(),
+            totalCost: recommendedOption.totalCost,
+            savings: Math.max(0, basketOptimizer.baselineCost - recommendedOption.totalCost),
+            stores: recommendedOption.stores,
+            itemCount: recommendedOption.coveredItems,
+            items: recommendedOption.groups.flatMap((g: OptimizerGroup) => 
+                g.items.map((item: OptimizerItem) => ({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    retailer: g.retailerId
+                }))
+            )
+        };
+
+        setShoppingHistory(prev => {
+            const next = [entry, ...prev];
+            localStorage.setItem('kallathaki_shopping_history', JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const resetAllAppData = () => {
+        localStorage.removeItem('posokanei_favorites');
+        localStorage.removeItem('posokanei_active_basket');
+        localStorage.removeItem('kallathaki_saved_baskets');
+        localStorage.removeItem('kallathaki_shopping_history');
+        localStorage.removeItem('kallathaki_favorite_retailers');
+        
+        setFavorites([]);
+        setActiveBasketIds([]);
+        setSavedBaskets([]);
+        setShoppingHistory([]);
+        setFavoriteRetailers(ALLOWED_RETAILERS);
+        setProfileSubView(null);
+        setActiveTab('products');
     };
 
     const refreshSavedProducts = useCallback(async (productsToRefresh = favorites) => {
@@ -578,10 +801,41 @@ export default function KallathakiApp() {
             } catch (e) {
                 console.error(e);
             }
-        } else {
-            // Default to selecting all favorites if no stored basket exists
             loadedBasketIds = loadedFavs.map(p => p.id);
             localStorage.setItem('posokanei_active_basket', JSON.stringify(loadedBasketIds));
+        }
+
+        // Initialize Saved Baskets
+        let loadedSavedBaskets: SavedBasket[] = [];
+        const storedSavedBaskets = localStorage.getItem('kallathaki_saved_baskets');
+        if (storedSavedBaskets) {
+            try {
+                loadedSavedBaskets = JSON.parse(storedSavedBaskets);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Initialize History
+        let loadedHistory: HistoryEntry[] = [];
+        const storedHistory = localStorage.getItem('kallathaki_shopping_history');
+        if (storedHistory) {
+            try {
+                loadedHistory = JSON.parse(storedHistory);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Initialize Favorite Supermarkets
+        let loadedFavoriteRetailers: string[] = ALLOWED_RETAILERS;
+        const storedFavoriteRetailers = localStorage.getItem('kallathaki_favorite_retailers');
+        if (storedFavoriteRetailers) {
+            try {
+                loadedFavoriteRetailers = JSON.parse(storedFavoriteRetailers);
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         // Defer state updates to avoid synchronous setState warnings in effect
@@ -590,6 +844,9 @@ export default function KallathakiApp() {
             setLanguage(storedLanguage);
             setFavorites(loadedFavs);
             setActiveBasketIds(loadedBasketIds);
+            setSavedBaskets(loadedSavedBaskets);
+            setShoppingHistory(loadedHistory);
+            setFavoriteRetailers(loadedFavoriteRetailers);
             
             // Check for shortcut action
             if (window.location.search.includes('action=scan')) {
@@ -1170,7 +1427,8 @@ export default function KallathakiApp() {
     const basketOptimizer = useMemo(() => {
         try {
             const totalItems = activeBasketProducts.length;
-            const retailerIds = ALLOWED_RETAILERS.filter((retailerId) =>
+            const activeRetailersList = favoriteRetailers.length > 0 ? favoriteRetailers : ALLOWED_RETAILERS;
+            const retailerIds = activeRetailersList.filter((retailerId) =>
                 activeBasketProducts.some((product) => product.retailer_prices.some((price) => price.retailer === retailerId))
             );
 
@@ -1278,7 +1536,7 @@ export default function KallathakiApp() {
                 missingPriceCount: activeBasketProducts.length
             };
         }
-    }, [activeBasketProducts]);
+    }, [activeBasketProducts, favoriteRetailers]);
 
     // Single Store Run comparison
     const singleStoreResults = useMemo(() => {
@@ -1544,11 +1802,9 @@ export default function KallathakiApp() {
                             </div>
                         )}
                         {activeTab === 'products' ? (
-                            isHomeScreen ? (
-                                // BRAND-NEW HOMEPAGE DASHBOARD
-                                <div className="space-y-14 pb-12">
-                                    {/* Modern Hero Section */}
-                                    <div className="relative bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900 text-white rounded-3xl p-8 md:p-12 shadow-xl overflow-hidden">
+                            <div className={isHomeScreen ? "space-y-14 pb-12" : "space-y-6"}>
+                                {isHomeScreen && (
+                                    <div className="relative bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900 text-white rounded-3xl p-8 md:p-12 shadow-xl overflow-hidden animate-fadeIn">
                                         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,transparent_45%,rgba(16,185,129,0.16)_100%)] pointer-events-none" />
 
                                         <div className="relative z-10 max-w-2xl">
@@ -1591,122 +1847,136 @@ export default function KallathakiApp() {
                                             </div>
                                         </div>
                                     </div>
+                                )}
 
-                                    <section className="bg-card-bg border border-border-custom rounded-3xl p-5 sm:p-7 shadow-sm">
-                                        <div className="flex flex-col lg:flex-row lg:items-center gap-5">
-                                            <div className="lg:w-80">
+                                <section key="persistent-search-bar" className={`bg-card-bg border border-border-custom rounded-3xl shadow-sm transition-all duration-300 ${isHomeScreen ? 'p-5 sm:p-7' : 'p-4'}`}>
+                                    <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+                                        {isHomeScreen && (
+                                            <div className="lg:w-80 animate-fadeIn">
                                                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{t('productSearch')}</span>
                                                 <h3 className="text-xl font-black text-slate-850 dark:text-slate-100 mt-1">{t('homeSearchTitle')}</h3>
                                                 <p className="text-sm text-slate-500 mt-2">{t('homeSearchText')}</p>
                                             </div>
-                                            <div className="relative flex-1">
-                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                                <input
-                                                    type="text"
-                                                    value={searchTerm}
-                                                    onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                                                    placeholder={language === 'en' ? 'e.g. milk, feta, coffee, detergent' : 'π.χ. γάλα, φέτα, καφές, απορρυπαντικό'}
-                                                    aria-label={language === 'en' ? 'Product search from home' : 'Αναζήτηση προϊόντων από την αρχική'}
-                                                    className="w-full pl-12 pr-4 py-4 text-base bg-input-custom border border-transparent focus:border-indigo-500 focus:bg-background rounded-2xl outline-none transition text-foreground shadow-inner"
-                                                />
+                                        )}
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                value={searchTerm}
+                                                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                                placeholder={language === 'en' ? 'e.g. milk, feta, coffee, detergent' : 'π.χ. γάλα, φέτα, καφές, απορρυπαντικό'}
+                                                aria-label={language === 'en' ? 'Product search from home' : 'Αναζήτηση προϊόντων από την αρχική'}
+                                                className="w-full pl-12 pr-10 py-4 text-base bg-input-custom border border-transparent focus:border-indigo-500 focus:bg-background rounded-2xl outline-none transition text-foreground shadow-inner"
+                                            />
+                                            {searchTerm && (
+                                                <button
+                                                    onClick={() => { setSearchTerm(''); setCurrentPage(1); }}
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition cursor-pointer"
+                                                    aria-label={t('clearSearch') || 'Καθαρισμός αναζήτησης'}
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {isHomeScreen ? (
+                                    <React.Fragment key="home-contents">
+                                        {/* Global Statistics Grid */}
+                                        <div className="space-y-5 animate-fadeIn">
+                                            <div className="px-1">
+                                                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                                                    {t('whyCompare')}
+                                                </h3>
+                                                <p className="text-sm text-slate-500 mt-1">{t('whyCompareText')}</p>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                                {[
+                                                    {
+                                                        label: language === 'en' ? 'More choices' : 'Περισσότερες επιλογές',
+                                                        value: stats ? Number(stats.total_products).toLocaleString('el-GR') : '8.773',
+                                                        desc: language === 'en' ? 'Products ready to compare' : 'Προϊόντα για σύγκριση τιμών',
+                                                        icon: <ShoppingBag className="w-5 h-5 text-indigo-500" />,
+                                                        bgColor: 'bg-indigo-500/10'
+                                                    },
+                                                    {
+                                                        label: language === 'en' ? 'Offers today' : 'Ευκαιρίες σήμερα',
+                                                        value: stats ? Number(stats.products_on_discount).toLocaleString('el-GR') : '2.263',
+                                                        desc: language === 'en' ? 'Products currently on offer' : 'Προϊόντα με ένδειξη προσφοράς',
+                                                        icon: <Percent className="w-5 h-5 text-emerald-500" />,
+                                                        bgColor: 'bg-emerald-500/10'
+                                                    },
+                                                    {
+                                                        label: language === 'en' ? 'Supermarket coverage' : 'Σύγκριση αλυσίδων',
+                                                        value: language === 'en' ? `${ALLOWED_RETAILERS.length} supermarkets` : `${ALLOWED_RETAILERS.length} αλυσίδες`,
+                                                        desc: language === 'en' ? 'Major chains for everyday shopping' : 'Οι βασικές επιλογές για καθημερινά ψώνια',
+                                                        icon: <Store className="w-5 h-5 text-amber-500" />,
+                                                        bgColor: 'bg-amber-500/10'
+                                                    },
+                                                    {
+                                                        label: language === 'en' ? 'Fresh prices' : 'Πρόσφατες τιμές',
+                                                        value: statsCatalogUpdatedAt(stats) ? formatGreekDate(statsCatalogUpdatedAt(stats)) : (language === 'en' ? 'Today' : 'Σήμερα'),
+                                                        desc: language === 'en' ? 'Latest price update' : 'Τελευταία ενημέρωση δεδομένων',
+                                                        icon: <Clock3 className="w-5 h-5 text-violet-500" />,
+                                                        bgColor: 'bg-violet-500/10'
+                                                    }
+                                                ].map((stat, idx) => (
+                                                    <div key={idx} className="bg-card-bg border border-border-custom p-5 rounded-2xl shadow-sm hover:shadow-md transition duration-300 flex items-start gap-4">
+                                                        <div className={`p-3 rounded-xl ${stat.bgColor} flex items-center justify-center shrink-0`}>
+                                                            {stat.icon}
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-xs text-slate-650 dark:text-slate-400 block font-medium">{stat.label}</span>
+                                                            <strong className="text-xl font-extrabold text-slate-800 dark:text-slate-100 block mt-1">{stat.value}</strong>
+                                                            <span className="text-[10px] text-slate-650 dark:text-slate-400 mt-0.5 block">{stat.desc}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    </section>
 
-                                    {/* Global Statistics Grid */}
-                                    <div className="space-y-5">
-                                        <div className="px-1">
-                                            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-                                                {t('whyCompare')}
-                                            </h3>
-                                            <p className="text-sm text-slate-500 mt-1">{t('whyCompareText')}</p>
+                                        {/* Quick Category Navigation */}
+                                        <div
+                                            ref={categorySectionRef}
+                                            tabIndex={-1}
+                                            className="space-y-5 scroll-mt-6 focus:outline-none animate-fadeIn"
+                                        >
+                                            <div className="px-1">
+                                                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                                                    {t('discoverByCategory')}
+                                                </h3>
+                                                <p className="text-sm text-slate-500 mt-1">{t('discoverByCategoryText')}</p>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                                {categories.map((cat) => {
+                                                    return (
+                                                        <button
+                                                            key={cat.category_id}
+                                                            onClick={() => handleCategoryClick(cat.category_id)}
+                                                            className="min-h-24 flex items-center gap-4 text-left p-4 rounded-2xl border border-border-custom bg-card-bg shadow-sm hover:shadow-md hover:border-indigo-500/40 active:scale-[0.99] transition duration-200 cursor-pointer group"
+                                                        >
+                                                            <div className="w-14 h-14 rounded-xl bg-input-custom border border-border-custom overflow-hidden flex items-center justify-center shrink-0">
+                                                                {cat.image_url ? (
+                                                                    <img src={cat.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                                                                ) : (
+                                                                    <ShoppingBag className="w-5 h-5 text-slate-400" />
+                                                                )}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <span className="text-sm font-black text-slate-850 dark:text-slate-100 block leading-tight truncate">{categoryName(cat)}</span>
+                                                                <span className="text-[11px] text-slate-500 font-bold mt-1 block">
+                                                                    {cat.total_product_count ? `${cat.total_product_count.toLocaleString('el-GR')} ${t('productCount')}` : t('viewAll')}
+                                                                </span>
+                                                            </div>
+                                                            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition shrink-0" />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                            {[
-                                                {
-                                                    label: language === 'en' ? 'More choices' : 'Περισσότερες επιλογές',
-                                                    value: stats ? Number(stats.total_products).toLocaleString('el-GR') : '8.773',
-                                                    desc: language === 'en' ? 'Products ready to compare' : 'Προϊόντα για σύγκριση τιμών',
-                                                    icon: <ShoppingBag className="w-5 h-5 text-indigo-500" />,
-                                                    bgColor: 'bg-indigo-500/10'
-                                                },
-                                                {
-                                                    label: language === 'en' ? 'Offers today' : 'Ευκαιρίες σήμερα',
-                                                    value: stats ? Number(stats.products_on_discount).toLocaleString('el-GR') : '2.263',
-                                                    desc: language === 'en' ? 'Products currently on offer' : 'Προϊόντα με ένδειξη προσφοράς',
-                                                    icon: <Percent className="w-5 h-5 text-emerald-500" />,
-                                                    bgColor: 'bg-emerald-500/10'
-                                                },
-                                                {
-                                                    label: language === 'en' ? 'Supermarket coverage' : 'Σύγκριση αλυσίδων',
-                                                    value: language === 'en' ? `${ALLOWED_RETAILERS.length} supermarkets` : `${ALLOWED_RETAILERS.length} αλυσίδες`,
-                                                    desc: language === 'en' ? 'Major chains for everyday shopping' : 'Οι βασικές επιλογές για καθημερινά ψώνια',
-                                                    icon: <Store className="w-5 h-5 text-amber-500" />,
-                                                    bgColor: 'bg-amber-500/10'
-                                                },
-                                                {
-                                                    label: language === 'en' ? 'Fresh prices' : 'Πρόσφατες τιμές',
-                                                    value: statsCatalogUpdatedAt(stats) ? formatGreekDate(statsCatalogUpdatedAt(stats)) : (language === 'en' ? 'Today' : 'Σήμερα'),
-                                                    desc: language === 'en' ? 'Latest price update' : 'Τελευταία ενημέρωση δεδομένων',
-                                                    icon: <Clock3 className="w-5 h-5 text-violet-500" />,
-                                                    bgColor: 'bg-violet-500/10'
-                                                }
-                                            ].map((stat, idx) => (
-                                                <div key={idx} className="bg-card-bg border border-border-custom p-5 rounded-2xl shadow-sm hover:shadow-md transition duration-300 flex items-start gap-4">
-                                                    <div className={`p-3 rounded-xl ${stat.bgColor} flex items-center justify-center shrink-0`}>
-                                                        {stat.icon}
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-xs text-slate-650 dark:text-slate-400 block font-medium">{stat.label}</span>
-                                                        <strong className="text-xl font-extrabold text-slate-800 dark:text-slate-100 block mt-1">{stat.value}</strong>
-                                                        <span className="text-[10px] text-slate-650 dark:text-slate-400 mt-0.5 block">{stat.desc}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Quick Category Navigation */}
-                                    <div
-                                        ref={categorySectionRef}
-                                        tabIndex={-1}
-                                        className="space-y-5 scroll-mt-6 focus:outline-none"
-                                    >
-                                        <div className="px-1">
-                                            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-                                                {t('discoverByCategory')}
-                                            </h3>
-                                            <p className="text-sm text-slate-500 mt-1">{t('discoverByCategoryText')}</p>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                                            {categories.map((cat) => {
-                                                return (
-                                                    <button
-                                                        key={cat.category_id}
-                                                        onClick={() => handleCategoryClick(cat.category_id)}
-                                                        className="min-h-24 flex items-center gap-4 text-left p-4 rounded-2xl border border-border-custom bg-card-bg shadow-sm hover:shadow-md hover:border-indigo-500/40 active:scale-[0.99] transition duration-200 cursor-pointer group"
-                                                    >
-                                                        <div className="w-14 h-14 rounded-xl bg-input-custom border border-border-custom overflow-hidden flex items-center justify-center shrink-0">
-                                                            {cat.image_url ? (
-                                                                <img src={cat.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                                                            ) : (
-                                                                <ShoppingBag className="w-5 h-5 text-slate-400" />
-                                                            )}
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <span className="text-sm font-black text-slate-850 dark:text-slate-100 block leading-tight truncate">{categoryName(cat)}</span>
-                                                            <span className="text-[11px] text-slate-500 font-bold mt-1 block">
-                                                                {cat.total_product_count ? `${cat.total_product_count.toLocaleString('el-GR')} ${t('productCount')}` : t('viewAll')}
-                                                            </span>
-                                                        </div>
-                                                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition shrink-0" />
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
+                                    </React.Fragment>
+                                ) : (
                                 // SEARCH & BROWSE RESULTS VIEW
                                 <div className="space-y-6">
                                     {/* Interactive Breadcrumbs */}
@@ -1965,8 +2235,9 @@ export default function KallathakiApp() {
                                         </div>
                                     )}
                                 </div>
-                            )
-                        ) : activeTab === 'offers' ? (
+                            )}
+                        </div>
+                    ) : activeTab === 'offers' ? (
                             <div className="space-y-8 pb-12">
                                 <section className="bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
                                     <div className="max-w-2xl">
@@ -2030,43 +2301,362 @@ export default function KallathakiApp() {
                                 )}
                             </div>
                         ) : activeTab === 'profile' ? (
-                            <div className="space-y-8 pb-12">
-                                <section className="bg-card-bg border border-border-custom rounded-3xl p-6 sm:p-8 shadow-sm">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
-                                            <UserCircle className="w-9 h-9" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl font-black text-slate-850 dark:text-slate-100">{t('profileTitle')}</h2>
-                                            <p className="text-sm text-slate-500 mt-1">{t('profileText')}</p>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                    {[
-                                        { title: t('favoriteProducts'), value: favorites.length, text: t('favoriteProductsText'), icon: <Heart className="w-5 h-5" /> },
-                                        { title: t('activeBasketTitle'), value: activeBasketProducts.length, text: t('activeBasketText'), icon: <ShoppingBasket className="w-5 h-5" /> },
-                                        { title: t('estimatedSavings'), value: `€${basketOptimizer.bestPossibleSaving.toFixed(2)}`, text: t('estimatedSavingsText'), icon: <PiggyBank className="w-5 h-5" /> }
-                                    ].map((item) => (
-                                        <div key={item.title} className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm">
-                                            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center mb-4">{item.icon}</div>
-                                            <div className="text-sm font-black text-slate-850 dark:text-slate-100">{item.title}</div>
-                                            <div className="text-2xl font-black text-emerald-600 mt-1">{item.value}</div>
-                                            <p className="text-xs text-slate-500 mt-2">{item.text}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm divide-y divide-border-custom">
-                                    {[t('savedBaskets'), t('shoppingHistory'), t('favoriteSupermarkets'), t('settings')].map((label) => (
-                                        <button key={label} className="w-full min-h-14 flex items-center justify-between text-left text-sm font-bold text-slate-750 dark:text-slate-200">
-                                            <span>{label}</span>
-                                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                            profileSubView ? (
+                                <div className="space-y-6 pb-12 animate-fadeIn">
+                                    {/* Back Header */}
+                                    <div className="flex items-center gap-3">
+                                        <button 
+                                            onClick={() => setProfileSubView(null)}
+                                            className="p-2 hover:bg-input-custom text-slate-650 dark:text-slate-350 rounded-xl transition cursor-pointer"
+                                            aria-label={t('backToProfile')}
+                                        >
+                                            <ArrowLeft className="w-5 h-5" />
                                         </button>
-                                    ))}
+                                        <h2 className="text-xl font-black text-slate-850 dark:text-slate-100">
+                                            {profileSubView === 'savedBaskets' && t('savedBaskets')}
+                                            {profileSubView === 'history' && t('shoppingHistory')}
+                                            {profileSubView === 'supermarkets' && t('favoriteSupermarkets')}
+                                            {profileSubView === 'settings' && t('settings')}
+                                        </h2>
+                                    </div>
+
+                                    {/* Saved Baskets Sub-view */}
+                                    {profileSubView === 'savedBaskets' && (
+                                        <div className="space-y-6">
+                                            <div className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm space-y-4">
+                                                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                                    {t('saveCurrentBasket')}
+                                                </h3>
+                                                {activeBasketProducts.length === 0 ? (
+                                                    <p className="text-xs text-amber-500 font-semibold bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                                                        {t('activeBasketIsEmpty')}
+                                                    </p>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        <label className="text-xs font-medium text-slate-400">
+                                                            {t('saveBasketPrompt')}
+                                                        </label>
+                                                        <div className="flex gap-2">
+                                                            <input 
+                                                                type="text"
+                                                                value={newBasketName}
+                                                                onChange={(e) => setNewBasketName(e.target.value)}
+                                                                placeholder={t('basketNamePlaceholder')}
+                                                                className="flex-1 px-4 py-2 text-sm bg-background border border-border-custom rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-foreground"
+                                                            />
+                                                            <button 
+                                                                onClick={() => {
+                                                                    saveBasket(newBasketName);
+                                                                    setNewBasketName('');
+                                                                    setToastMessage(t('basketSavedSuccess'));
+                                                                }}
+                                                                className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                                                            >
+                                                                {t('saveCurrentBasket')}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {savedBaskets.length === 0 ? (
+                                                <div className="bg-card-bg border border-border-custom rounded-3xl p-8 text-center">
+                                                    <ShoppingBasket className="w-10 h-10 text-indigo-500 mx-auto mb-3 opacity-60" />
+                                                    <p className="text-sm text-slate-500 font-medium">{t('noSavedBaskets')}</p>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {savedBaskets.map((basket) => (
+                                                        <div key={basket.id} className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-4">
+                                                            <div>
+                                                                <h4 className="text-base font-black text-slate-800 dark:text-slate-100">{basket.name}</h4>
+                                                                <p className="text-xs text-slate-400 mt-1">
+                                                                    {t('date')}: {new Date(basket.createdAt).toLocaleDateString(language === 'el' ? 'el-GR' : 'en-US')}
+                                                                </p>
+                                                                <p className="text-xs font-bold text-indigo-500 mt-2">
+                                                                    {basket.products.length} {language === 'el' ? 'προϊόντα' : 'products'}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        loadBasket(basket);
+                                                                        setToastMessage(t('basketLoadedSuccess'));
+                                                                    }}
+                                                                    className="flex-1 py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                                                                >
+                                                                    {t('load')}
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        if (confirm(t('confirmDeleteBasket'))) {
+                                                                            deleteSavedBasket(basket.id);
+                                                                        }
+                                                                    }}
+                                                                    className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white rounded-xl transition cursor-pointer"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Shopping History Sub-view */}
+                                    {profileSubView === 'history' && (
+                                        <div className="space-y-6">
+                                            {shoppingHistory.length > 0 && (
+                                                <div className="flex justify-end">
+                                                    <button 
+                                                        onClick={() => {
+                                                            if (confirm(t('confirmClearHistory'))) {
+                                                                clearShoppingHistory();
+                                                            }
+                                                        }}
+                                                        className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        <span>{t('clearHistory')}</span>
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {shoppingHistory.length === 0 ? (
+                                                <div className="bg-card-bg border border-border-custom rounded-3xl p-8 text-center">
+                                                    <Clock3 className="w-10 h-10 text-indigo-500 mx-auto mb-3 opacity-60" />
+                                                    <p className="text-sm text-slate-500 font-medium">{t('noHistory')}</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {shoppingHistory.map((entry) => (
+                                                        <details key={entry.id} className="group bg-card-bg border border-border-custom rounded-3xl overflow-hidden shadow-sm">
+                                                            <summary className="list-none cursor-pointer p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none">
+                                                                <div className="space-y-1">
+                                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                                                        {t('completedTrip')}
+                                                                    </h4>
+                                                                    <p className="text-xs text-slate-400">
+                                                                        {new Date(entry.date).toLocaleString(language === 'el' ? 'el-GR' : 'en-US')}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="text-right">
+                                                                        <div className="text-sm text-slate-400 font-medium">{t('totalSpent')}</div>
+                                                                        <strong className="text-base font-black text-slate-800 dark:text-slate-100">€{entry.totalCost.toFixed(2)}</strong>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <div className="text-sm text-slate-400 font-medium">{t('totalSavings')}</div>
+                                                                        <strong className="text-base font-black text-emerald-600 dark:text-emerald-400">€{entry.savings.toFixed(2)}</strong>
+                                                                    </div>
+                                                                    <button 
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            if (confirm(t('confirmDeleteTrip'))) {
+                                                                                deleteHistoryEntry(entry.id);
+                                                                            }
+                                                                        }}
+                                                                        className="p-2 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 rounded-xl transition cursor-pointer"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                    <ChevronRight className="w-4 h-4 text-slate-400 group-open:rotate-90 transition-transform" />
+                                                                </div>
+                                                            </summary>
+                                                            <div className="px-5 pb-5 pt-2 border-t border-border-custom/50 space-y-4">
+                                                                <div className="flex flex-wrap gap-2 items-center">
+                                                                    <span className="text-xs font-bold text-slate-400">{t('storesVisited')}:</span>
+                                                                    {entry.stores.map(storeId => (
+                                                                        <span key={storeId} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-input-custom text-[10px] font-bold text-slate-650 dark:text-slate-350">
+                                                                            <img src={`https://api.posokanei.gov.gr/images/retailer/${storeId}`} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                                                            {RETAILER_META[storeId]?.name || storeId}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <span className="text-xs font-bold text-slate-400">{t('details')}:</span>
+                                                                    <div className="divide-y divide-border-custom/50">
+                                                                        {entry.items.map((item, idx) => (
+                                                                            <div key={idx} className="flex justify-between items-center py-2 text-xs">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <img src={`https://api.posokanei.gov.gr/images/retailer/${item.retailer}`} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                                                                    <span className="text-slate-650 dark:text-slate-300 font-medium">{item.name}</span>
+                                                                                </div>
+                                                                                <strong className="text-slate-800 dark:text-slate-100">€{item.price.toFixed(2)}</strong>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </details>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Favorite Supermarkets Sub-view */}
+                                    {profileSubView === 'supermarkets' && (
+                                        <div className="bg-card-bg border border-border-custom rounded-3xl p-6 shadow-sm space-y-6">
+                                            <p className="text-sm text-slate-500">
+                                                {t('supermarketsDescription')}
+                                            </p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {ALLOWED_RETAILERS.map((retailerId) => {
+                                                    const isFav = favoriteRetailers.includes(retailerId);
+                                                    const meta = RETAILER_META[retailerId] || { name: retailerId };
+                                                    return (
+                                                        <div 
+                                                            key={retailerId}
+                                                            onClick={() => toggleFavoriteRetailer(retailerId)}
+                                                            className={`
+                                                                p-4 rounded-2xl border transition cursor-pointer flex items-center justify-between select-none
+                                                                ${isFav 
+                                                                    ? 'bg-indigo-50/5 border-indigo-500/30' 
+                                                                    : 'bg-input-custom border-transparent opacity-60 hover:opacity-100'}
+                                                            `}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <img 
+                                                                    src={`https://api.posokanei.gov.gr/images/retailer/${retailerId}`} 
+                                                                    alt="" 
+                                                                    className="w-10 h-10 rounded-full object-cover border border-border-custom"
+                                                                />
+                                                                <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{meta.name}</span>
+                                                            </div>
+                                                            <div className={`
+                                                                w-6 h-6 rounded-full flex items-center justify-center border transition
+                                                                ${isFav 
+                                                                    ? 'bg-indigo-500 border-indigo-500 text-white' 
+                                                                    : 'border-slate-350 dark:border-slate-600'}
+                                                            `}>
+                                                                {isFav && <Check className="w-4 h-4" />}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Settings Sub-view */}
+                                    {profileSubView === 'settings' && (
+                                        <div className="space-y-6">
+                                            <div className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm divide-y divide-border-custom">
+                                                {/* Language Setting */}
+                                                <div className="py-4 flex items-center justify-between gap-4">
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100">{t('languageSettings')}</div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={toggleLanguage}
+                                                        className="px-4 py-2 bg-input-custom hover:bg-border-custom/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-xl transition cursor-pointer border border-border-custom"
+                                                    >
+                                                        {language === 'el' ? 'English' : 'Ελληνικά'}
+                                                    </button>
+                                                </div>
+
+                                                {/* Theme Setting */}
+                                                <div className="py-4 flex items-center justify-between gap-4">
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100">{t('themeSettings')}</div>
+                                                    </div>
+                                                    <div className="flex bg-input-custom p-1 rounded-xl border border-border-custom">
+                                                        <button 
+                                                            onClick={() => theme !== 'light' && toggleTheme()}
+                                                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${theme === 'light' ? 'bg-background shadow text-slate-800 dark:text-slate-100' : 'text-slate-450 hover:text-foreground'}`}
+                                                        >
+                                                            <Sun className="w-3.5 h-3.5" />
+                                                            <span>{t('themeLight')}</span>
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => theme !== 'dark' && toggleTheme()}
+                                                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${theme === 'dark' ? 'bg-background shadow text-indigo-500 dark:text-indigo-400' : 'text-slate-450 hover:text-foreground'}`}
+                                                        >
+                                                            <Moon className="w-3.5 h-3.5" />
+                                                            <span>{t('themeDark')}</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Reset Section */}
+                                            <div className="bg-rose-500/5 border border-rose-500/20 rounded-3xl p-6 space-y-4">
+                                                <h3 className="text-sm font-black text-rose-500 flex items-center gap-2">
+                                                    <AlertTriangle className="w-5 h-5" />
+                                                    <span>{t('resetAppDataButton')}</span>
+                                                </h3>
+                                                <p className="text-xs text-slate-500 font-medium">
+                                                    {t('resetAppDataPrompt')}
+                                                </p>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (confirm(t('resetAppDataPrompt'))) {
+                                                            if (confirm(t('resetAppDataConfirm'))) {
+                                                                resetAllAppData();
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                                                >
+                                                    {t('resetAppDataButton')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="space-y-8 pb-12 animate-fadeIn">
+                                    <section className="bg-card-bg border border-border-custom rounded-3xl p-6 sm:p-8 shadow-sm">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
+                                                <UserCircle className="w-9 h-9" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-2xl font-black text-slate-850 dark:text-slate-100">{t('profileTitle')}</h2>
+                                                <p className="text-sm text-slate-500 mt-1">{t('profileText')}</p>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                                        {[
+                                            { title: t('favoriteProducts'), value: favorites.length, text: t('favoriteProductsText'), icon: <Heart className="w-5 h-5" /> },
+                                            { title: t('activeBasketTitle'), value: activeBasketProducts.length, text: t('activeBasketText'), icon: <ShoppingBasket className="w-5 h-5" /> },
+                                            { title: t('estimatedSavings'), value: `€${basketOptimizer.bestPossibleSaving.toFixed(2)}`, text: t('estimatedSavingsText'), icon: <PiggyBank className="w-5 h-5" /> }
+                                        ].map((item) => (
+                                            <div key={item.title} className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm">
+                                                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center mb-4">{item.icon}</div>
+                                                <div className="text-sm font-black text-slate-850 dark:text-slate-100">{item.title}</div>
+                                                <div className="text-2xl font-black text-emerald-600 mt-1">{item.value}</div>
+                                                <p className="text-xs text-slate-500 mt-2">{item.text}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="bg-card-bg border border-border-custom rounded-3xl p-5 shadow-sm divide-y divide-border-custom">
+                                        {[
+                                            { label: t('savedBaskets'), view: 'savedBaskets' as const },
+                                            { label: t('shoppingHistory'), view: 'history' as const },
+                                            { label: t('favoriteSupermarkets'), view: 'supermarkets' as const },
+                                            { label: t('settings'), view: 'settings' as const }
+                                        ].map((opt) => (
+                                            <button 
+                                                key={opt.view} 
+                                                onClick={() => setProfileSubView(opt.view)}
+                                                className="w-full min-h-14 flex items-center justify-between text-left text-sm font-bold text-slate-750 dark:text-slate-200 hover:text-indigo-500 transition cursor-pointer"
+                                            >
+                                                <span>{opt.label}</span>
+                                                <ChevronRight className="w-4 h-4 text-slate-400" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
                         ) : (
                             // FAVORITES & BASKET OPTIMIZER VIEW
                             <FavoritesView
@@ -2092,6 +2682,10 @@ export default function KallathakiApp() {
                                 showOptimizerResults={showOptimizerResults}
                                 setShowOptimizerResults={setShowOptimizerResults}
                                 basketOptimizer={basketOptimizer}
+                                onRecordTrip={(option) => {
+                                    recordTrip(option);
+                                    setToastMessage(t('tripRecordedSuccess'));
+                                }}
                             />
                         )}
                     </main>
@@ -2464,6 +3058,14 @@ export default function KallathakiApp() {
                         <span className="text-[10px]">{t('profileNav')}</span>
                     </button>
                 </nav>
+
+                {/* Floating Toast Notification */}
+                {toastMessage && (
+                    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 dark:bg-slate-850/95 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-white/10 animate-fadeIn backdrop-blur">
+                        <Check className="w-4.5 h-4.5 text-emerald-400" />
+                        <span>{toastMessage}</span>
+                    </div>
+                )}
 
                 {/* Barcode Scanner Modal */}
                 {isScannerOpen && (

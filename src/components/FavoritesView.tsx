@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, ShoppingBag, ShoppingBasket, Trash2, Share2, Store, Info, Trophy, PiggyBank, MapPin, RefreshCw } from 'lucide-react';
+import { Heart, ShoppingBag, ShoppingBasket, Trash2, Share2, Store, Info, Trophy, PiggyBank, MapPin, RefreshCw, Check } from 'lucide-react';
 
 interface PriceStat {
     min_price: number;
@@ -102,6 +102,7 @@ interface FavoritesViewProps {
     showOptimizerResults: boolean;
     setShowOptimizerResults: (show: boolean) => void;
     basketOptimizer: BasketOptimizerResult;
+    onRecordTrip?: (option: BasketOptimizerOption) => void;
 }
 
 const retailerLogoUrl = (retailerId: string) => `/api/images/retailer/${retailerId}`;
@@ -284,6 +285,7 @@ export default function FavoritesView({
     showOptimizerResults,
     setShowOptimizerResults,
     basketOptimizer,
+    onRecordTrip,
 }: FavoritesViewProps) {
     const copy = BASKET_COPY[language];
     const productCountLabel = (count: number) => language === 'en'
@@ -628,6 +630,16 @@ export default function FavoritesView({
                                                                 </span>
                                                             ))}
                                                         </div>
+
+                                                        {onRecordTrip && (
+                                                            <button
+                                                                onClick={() => onRecordTrip(option)}
+                                                                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 mt-auto"
+                                                            >
+                                                                <Check className="w-4 h-4" />
+                                                                <span>{language === 'en' ? 'Record Shopping Trip' : 'Καταγραφή Αγορών'}</span>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
