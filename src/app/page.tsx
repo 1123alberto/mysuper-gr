@@ -2152,15 +2152,15 @@ export default function KallathakiApp() {
                                                 </h3>
                                                 <p className="text-sm text-slate-500 mt-1">{t('discoverByCategoryText')}</p>
                                             </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                                 {categories.map((cat) => {
                                                     return (
                                                         <button
                                                             key={cat.category_id}
                                                             onClick={() => handleCategoryClick(cat.category_id)}
-                                                            className="min-h-24 flex items-center gap-4 text-left p-4 rounded-2xl border border-border-custom bg-card-bg shadow-sm hover:shadow-md hover:border-indigo-500/40 active:scale-[0.99] transition duration-200 cursor-pointer group"
+                                                            className="min-h-20 sm:min-h-24 flex items-center gap-2 sm:gap-4 text-left p-2.5 sm:p-4 rounded-2xl border border-border-custom bg-card-bg shadow-sm hover:shadow-md hover:border-indigo-500/40 active:scale-[0.99] transition duration-200 cursor-pointer group"
                                                         >
-                                                            <div className="w-14 h-14 rounded-xl bg-input-custom border border-border-custom overflow-hidden flex items-center justify-center shrink-0">
+                                                            <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-input-custom border border-border-custom overflow-hidden flex items-center justify-center shrink-0">
                                                                 {cat.image_url ? (
                                                                     <img src={cat.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                                                                 ) : (
@@ -2917,7 +2917,7 @@ export default function KallathakiApp() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                             {[
                                                 {
                                                     title: language === 'el' ? 'Εβδομαδιαίο καλάθι' : 'Weekly Basket',
@@ -3247,79 +3247,43 @@ export default function KallathakiApp() {
                                         </div>
                                     </section>
 
-                                    <section className="grid grid-cols-1 xl:grid-cols-[1fr_0.95fr] gap-5">
-                                        <div className="bg-card-bg border border-border-custom rounded-[1.8rem] p-5 shadow-sm space-y-4">
-                                            <div>
-                                                <h3 className="text-lg font-black text-slate-850 dark:text-slate-100">
-                                                    {language === 'el' ? 'Βοήθεια' : 'Help'}
-                                                </h3>
-                                                <p className="text-sm text-slate-500">
-                                                    {language === 'el' ? 'Ό,τι χρειάζεσαι για να συνεχίσεις με σιγουριά.' : 'Everything you need to keep shopping with confidence.'}
-                                                </p>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                <Link href="/guide" className="rounded-[1.3rem] border border-border-custom bg-background/70 p-4 hover:border-indigo-500/30 transition">
-                                                    <div className="text-sm font-black text-slate-850 dark:text-slate-100">
-                                                        {language === 'el' ? 'Κέντρο βοήθειας' : 'Help Center'}
-                                                    </div>
-                                                    <div className="text-xs text-slate-500 mt-1">
-                                                        {language === 'el' ? 'Οδηγός για αναζήτηση, καλάθι και βελτιστοποίηση.' : 'Guide for search, basket, and optimization.'}
-                                                    </div>
-                                                </Link>
-                                                {[
-                                                    language === 'el' ? 'Επικοινωνία υποστήριξης' : 'Contact Support',
-                                                    language === 'el' ? 'Αναφορά λανθασμένης τιμής' : 'Report Incorrect Price',
-                                                    language === 'el' ? 'Πρότεινε feature' : 'Suggest Feature',
-                                                    language === 'el' ? 'Σχετικά με το Kallathaki' : 'About Kallathaki',
-                                                    language === 'el' ? 'Privacy Policy' : 'Privacy Policy',
-                                                    language === 'el' ? 'Terms' : 'Terms'
-                                                ].map((label) => (
-                                                    <button
-                                                        key={label}
-                                                        onClick={() => handleHelpPlaceholder(label)}
-                                                        className="rounded-[1.3rem] border border-border-custom bg-background/70 p-4 text-left hover:border-indigo-500/30 transition cursor-pointer"
-                                                    >
-                                                        <div className="text-sm font-black text-slate-850 dark:text-slate-100">{label}</div>
-                                                        <div className="text-xs text-slate-500 mt-1">
-                                                            {language === 'el' ? 'Θα συνδεθεί με το κατάλληλο flow σε επόμενο βήμα.' : 'This will connect to the proper flow in a follow-up step.'}
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </div>
+                                    <section className="bg-card-bg border border-border-custom rounded-[1.8rem] p-5 shadow-sm space-y-4">
+                                        <div>
+                                            <h3 className="text-lg font-black text-slate-850 dark:text-slate-100">
+                                                {language === 'el' ? 'Βοήθεια' : 'Help'}
+                                            </h3>
+                                            <p className="text-sm text-slate-500">
+                                                {language === 'el' ? 'Ό,τι χρειάζεσαι για να συνεχίσεις με σιγουριά.' : 'Everything you need to keep shopping with confidence.'}
+                                            </p>
                                         </div>
-
-                                        <div className="bg-card-bg border border-border-custom rounded-[1.8rem] p-5 shadow-sm space-y-4">
-                                            <div>
-                                                <h3 className="text-lg font-black text-slate-850 dark:text-slate-100">
-                                                    {language === 'el' ? 'Έρχεται σύντομα' : 'Coming Soon'}
-                                                </h3>
-                                                <p className="text-sm text-slate-500">
-                                                    {language === 'el' ? 'Χώρος για πιο έξυπνα εργαλεία χωρίς να βαραίνει η σημερινή εμπειρία.' : 'Space for smarter tools without weighing down today\'s experience.'}
-                                                </p>
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {(language === 'el'
-                                                    ? [
-                                                        'Shopping Intelligence',
-                                                        'Weekly Insights',
-                                                        'Price Alerts',
-                                                        'AI Recommendations'
-                                                    ]
-                                                    : [
-                                                        'Shopping Intelligence',
-                                                        'Weekly Insights',
-                                                        'Price Alerts',
-                                                        'AI Recommendations'
-                                                    ]
-                                                ).map((item) => (
-                                                    <div key={item} className="rounded-[1.3rem] border border-dashed border-border-custom bg-background/40 p-4 opacity-75">
-                                                        <div className="text-sm font-black text-slate-850 dark:text-slate-100">{item}</div>
-                                                        <div className="text-xs text-slate-500 mt-1">
-                                                            {language === 'el' ? 'Placeholder για μελλοντική αναβάθμιση.' : 'Reserved placeholder for a future upgrade.'}
-                                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <Link href="/guide" className="rounded-[1.3rem] border border-border-custom bg-background/70 p-4 hover:border-indigo-500/30 transition">
+                                                <div className="text-sm font-black text-slate-850 dark:text-slate-100">
+                                                    {language === 'el' ? 'Κέντρο βοήθειας' : 'Help Center'}
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    {language === 'el' ? 'Οδηγός για αναζήτηση, καλάθι και βελτιστοποίηση.' : 'Guide for search, basket, and optimization.'}
+                                                </div>
+                                            </Link>
+                                            {[
+                                                language === 'el' ? 'Επικοινωνία υποστήριξης' : 'Contact Support',
+                                                language === 'el' ? 'Αναφορά λανθασμένης τιμής' : 'Report Incorrect Price',
+                                                language === 'el' ? 'Πρότεινε feature' : 'Suggest Feature',
+                                                language === 'el' ? 'Σχετικά με το Kallathaki' : 'About Kallathaki',
+                                                language === 'el' ? 'Privacy Policy' : 'Privacy Policy',
+                                                language === 'el' ? 'Terms' : 'Terms'
+                                            ].map((label) => (
+                                                <button
+                                                    key={label}
+                                                    onClick={() => handleHelpPlaceholder(label)}
+                                                    className="rounded-[1.3rem] border border-border-custom bg-background/70 p-4 text-left hover:border-indigo-500/30 transition cursor-pointer"
+                                                >
+                                                    <div className="text-sm font-black text-slate-850 dark:text-slate-100">{label}</div>
+                                                    <div className="text-xs text-slate-500 mt-1">
+                                                        {language === 'el' ? 'Θα συνδεθεί με το κατάλληλο flow σε επόμενο βήμα.' : 'This will connect to the proper flow in a follow-up step.'}
                                                     </div>
-                                                ))}
-                                            </div>
+                                                </button>
+                                            ))}
                                         </div>
                                     </section>
                                 </div>
